@@ -50,6 +50,8 @@ int MySQL::connect()
     }
     //数据库连接成功了
     is_connected = true;
+	//设置返回字符串的编码
+	query("set names utf8;");
     return 0;
 }
 //断开

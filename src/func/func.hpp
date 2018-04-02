@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include <numeric>
 #include <algorithm>
 
@@ -50,5 +51,14 @@ void format_print(std::ostream& myout, T first, Types... args)
     myout<<std::left<<std::setw(16)<<first<<" ";
     format_print(myout, args...);
 }
+
+std::wstring string_to_wstring(const std::string &);
+std::string wstring_to_string(const std::wstring &);
+
+
+
+
+
+
 
 #endif

@@ -56,7 +56,7 @@ int main(int args, const char* argv[])
 	auto & table = sql.get_result_table();
 	for (auto & row : table)
 	{
-		for (auto & x : row) std::cout<<x<<" ";
+		for (auto & x : row) std::cout<< string_to_wstring(x)<<" ";
 		std::cout<<"\n";
 	}
 	std::cout<<sql()<<std::endl;    

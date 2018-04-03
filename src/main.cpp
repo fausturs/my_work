@@ -49,7 +49,7 @@ int main(int args, const char* argv[])
     tf.initialize(2, 2, 2);
     tf.train(A, std::cout);
 	*/
-	MySQL sql("127.0.0.1", "wjy", "", "lagou_data");
+	wjy::MySQL sql("127.0.0.1", "wjy", "", "lagou_data");
 	sql.connect();
 	sql.query("select id,position from clean_positions limit 0,20;");
 	std::cout<<sql.get_error_info();

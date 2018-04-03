@@ -19,6 +19,10 @@
 
 #include "mysql.h"
 
+namespace wjy {
+    
+
+
 class MySQL{
 //
     MYSQL mysql;
@@ -71,5 +75,5 @@ public:
     const std::vector< std::string >& operator [](unsigned long i) const;
 };
 
-
+}
 #endif /* MySQL_hpp */

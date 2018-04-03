@@ -9,6 +9,7 @@
 #include "MySQL.hpp"
 //#include <iostream>
 
+using namespace wjy;
 
 MySQL::MySQL(std::string ip,std::string usr_name,std::string pwd,std::string database_name)
 {

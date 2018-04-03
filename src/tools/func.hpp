@@ -3,9 +3,17 @@
 
 #include <iostream>
 #include <iomanip>
+#include <unordered_set>
+#include <unordered_map>
 #include <string>
 #include <numeric>
 #include <algorithm>
+#include "sparse_tensor.hpp"
+
+extern std::unordered_map< std::string, size_t >   skill_to_id, company_to_id, position_to_id;
+extern std::vector< std::string >                  id_to_skill, id_to_company, id_to_position;
+
+wjy::sparse_tensor<double, 3> create_tensor(const std::string path = "../data/position_cut.txt");
 
 // vector sum
 template <class Input_it1, class Input_it2, class T>
@@ -52,13 +60,14 @@ void format_print(std::ostream& myout, T first, Types... args)
     format_print(myout, args...);
 }
 
-std::wstring string_to_wstring(const std::string &);
-std::string wstring_to_string(const std::wstring &);
-
-
-
-
-
+//std::vector< std::string > split(const std::string& st, const std::unordered_set< std::string >& spliter = {","});
+//
+//std::unordered_set< std::string > read_skill_list(const std::string& path = "../data/skill_list.txt");
+//std::unordered_map< std::string, int > read_demand_level(const std::string& path = "../data/demand_level.txt");
+//
+//std::list< std::pair<std::string, int> > parse_jd_demand(const std::vector< std::string >& jd,const std::unordered_set< std::string >& skill_list, const std::unordered_map< std::string, int >& demand_level);
+//
+//
 
 
 #endif

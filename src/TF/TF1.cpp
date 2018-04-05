@@ -1,4 +1,4 @@
-#include "TF.hpp"
+#include "TF1.hpp"
 
 #include <fstream>
 #include <iterator>
@@ -14,10 +14,10 @@
 /*
  member value or member function of class MF
  */
-const TF::element_tp TF::empty_mark = 0;
-std::ostringstream TF::TF_log;
+const TF1::element_tp TF1::empty_mark = 0;
+std::ostringstream TF1::TF1_log;
 
-void TF::initialize(size_t u_rank, size_t v_rank, size_t w_rank, int rand_seed, element_tp rand_range, element_tp lambda, element_tp initial_learning_rate, size_t max_iter_num, element_tp epsilon)
+void TF1::initialize(size_t u_rank, size_t v_rank, size_t w_rank, int rand_seed, element_tp rand_range, element_tp lambda, element_tp initial_learning_rate, size_t max_iter_num, element_tp epsilon)
 {
     this->u_rank = u_rank;
     this->v_rank = v_rank;
@@ -36,7 +36,7 @@ void TF::initialize(size_t u_rank, size_t v_rank, size_t w_rank, int rand_seed, 
     clear();
 }
 
-TF::element_tp TF::predict(size_t i, size_t j, size_t k) const
+TF1::element_tp TF1::predict(size_t i, size_t j, size_t k) const
 {
     // here use s_w_v_u denote s*w*v*u, it's a scale. in fact u,v,w denote u_i,v_j,w_k
     // similar s_w_v means s*w*v, it's a vector
@@ -46,7 +46,7 @@ TF::element_tp TF::predict(size_t i, size_t j, size_t k) const
     return s_w_v_u;
 }
 
-void TF::save(const std::string& path) const
+void TF1::save(const std::string& path) const
 {
     std::ofstream myout(path);
     assert(myout);
@@ -62,7 +62,7 @@ void TF::save(const std::string& path) const
     save_vector(s);
 }
 
-void TF::load(const std::string& path)
+void TF1::load(const std::string& path)
 {
     std::ifstream myin(path);
     assert(myin);
@@ -80,7 +80,7 @@ void TF::load(const std::string& path)
     load_vector(s, u_rank * v_rank * w_rank);
 }
 
-void TF::clear()
+void TF1::clear()
 {
     u.clear();
     v.clear();
@@ -88,7 +88,7 @@ void TF::clear()
     s.clear();s2.clear();s3.clear();
 }
 
-void TF::print()
+void TF1::print()
 {
     auto & myout = std::cout;
     auto save_vector = [&myout](auto& ve){
@@ -101,7 +101,7 @@ void TF::print()
     myout<<std::endl;
 }
 
-void TF::generate_u_v_w_s(const sparse_tensor_tp& A)
+void TF1::generate_u_v_w_s(const sparse_tensor_tp& A)
 {
     dim_1 = dim_2 = dim_3 = 0;
     for (auto & A_i : A)
@@ -133,7 +133,7 @@ void TF::generate_u_v_w_s(const sparse_tensor_tp& A)
 }
 
 // s2,s3 is mutable variable, so const member function can change it.
-void TF::update_s2_s3() const
+void TF1::update_s2_s3() const
 {
     for (size_t i=0; i<u_rank; i++)
         for (size_t j=0; j<v_rank; j++)
@@ -145,7 +145,7 @@ void TF::update_s2_s3() const
             }
 }
 
-TF::element_tp TF::calculate_loss(const TF::sparse_tensor_tp& A) const
+TF1::element_tp TF1::calculate_loss(const TF1::sparse_tensor_tp& A) const
 {
     element_tp loss = 0;
     loss = std::inner_product(u.begin(), u.end(), u.begin(), loss);
@@ -165,7 +165,7 @@ TF::element_tp TF::calculate_loss(const TF::sparse_tensor_tp& A) const
     return loss;
 }
 
-std::vector< TF::element_tp > TF::calculate_gradient(const TF::sparse_tensor_tp& A) const
+std::vector< TF1::element_tp > TF1::calculate_gradient(const TF1::sparse_tensor_tp& A) const
 {
     std::vector< element_tp > gradient(dim_1*u_rank + dim_2*v_rank + dim_3*w_rank + u_rank*v_rank*w_rank, 0);
     auto g_u_first = gradient.begin();

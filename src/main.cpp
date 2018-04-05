@@ -48,18 +48,63 @@ int main(int args, const char* argv[])
     TF tf;
     tf.initialize(2, 2, 2);
     tf.train(A, std::cout);
-	*/
+	
+	std::string
+	std::ifstream myin("../data/position_cut.txt");
+	std::ofstream myout("../data/temp.txt", std::ios::app);
+	std::getline(myin, st);
+	while (std::getline(myin, st) )
+	{
+		myout<<st<<std::endl;
+	}
+	
+	//test()
 	wjy::MySQL sql("127.0.0.1", "wjy", "", "lagou_data");
 	sql.connect();
-	sql.query("select id,position from clean_positions limit 0,20;");
-	std::cout<<sql.get_error_info();
-	auto & table = sql.get_result_table();
-	for (auto & row : table)
+	sql.query("select id,compname,position from clean_positions");
+	auto table = sql.get_result_table();
+	for(auto & row : table)
 	{
-		for (auto & x : row) std::cout<< x <<" ";
+		for (auto s: row) std::cout<<s<<"?";
 		std::cout<<"\n";
 	}
-	std::cout<<sql()<<std::endl;    
-    std::cout<<"hello world!"<<std::endl;
+	std::string st;
+	std::ifstream myin("../data/jdid_company_position.txt");
+//	std::ofstream myout("../data/temp.txt", std::ios::app);
+	while (std::getline(myin, st) )
+	{
+		auto a = split(st, {'?'});
+		if (a.size() !=3) std::cout<<st<<std::endl;
+	}
+	*/
+	auto tensor = create_tensor();
+	wjy::save_sparse_tensor(tensor, "../data/tensor.txt");
+	std::cout<<"hello world!"<<std::endl;
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

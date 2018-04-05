@@ -13,10 +13,9 @@
 extern std::unordered_map< std::string, size_t >   skill_to_id, company_to_id, position_to_id;
 extern std::vector< std::string >                  id_to_skill, id_to_company, id_to_position;
 
-
 std::vector< std::string > split(const std::string& st, const std::unordered_set< char >& spliter = {','});
 
-wjy::sparse_tensor<double, 3> create_tensor(const std::string path = "../data/position_cut.txt");
+wjy::sparse_tensor<double, 3> create_tensor(const std::string& path = "../data/position_cut.txt");
 
 // vector sum
 template <class Input_it1, class Input_it2, class T>
@@ -62,6 +61,9 @@ void format_print(std::ostream& myout, T first, Types... args)
     myout<<std::left<<std::setw(16)<<first<<" ";
     format_print(myout, args...);
 }
+
+//for test
+void test();
 
 //std::vector< std::string > split(const std::string& st, const std::unordered_set< std::string >& spliter = {","});
 //

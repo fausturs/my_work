@@ -174,8 +174,8 @@ std::vector< TF::element_tp > TF::calculate_gradient(const TF::sparse_tensor_tp&
     auto g_s_first = g_w_first + dim_3*w_rank, g_s_last = gradient.end();
     add_to(g_u_first, g_v_first, u.begin(), 2*lambda);
     add_to(g_v_first, g_w_first, v.begin(), 2*lambda);
-    add_to(g_w_first, g_s_first, v.begin(), 2*lambda);
-    add_to(g_s_first, g_s_last , v.begin(), 2*lambda);
+    add_to(g_w_first, g_s_first, w.begin(), 2*lambda);
+    add_to(g_s_first, g_s_last , s.begin(), 2*lambda);
     // s maybe changed in gradient descent, s2 and s3 need update.
     update_s2_s3();
     for (auto & A_i : A)

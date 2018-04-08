@@ -41,11 +41,12 @@ private:
     element_tp initial_learning_rate, epsilon;
     size_t max_iter_num, mini_batch_size;
     //
-    std::mt19937 mt;
+    mutable std::mt19937 mt;
     element_tp rand_range;
     // store iterators for mini-batch sgd
-    std::vector< sparse_tensor_tp::const_iterator > iterators;
+    std::vector< typename sparse_tensor_tp::const_iterator > iterators;
     
+	size_t aaaaa;
 public:
     TF() = default;
     // movable
@@ -59,7 +60,7 @@ public:
 
     // initialize matrix v,u by random real number from [-rand_range, rand_range]
     // if rand_seed = -1 use std::random_device as the seed, else use rand_seed
-    void initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num=20000, size_t mini_batch_size=1000, int rand_seed=1, element_tp rand_range=0.2, element_tp lambda=0.5, element_tp initial_learning_rate=0.000001, element_tp epsilon=0.1);
+    void initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num=200000, size_t mini_batch_size=1000, int rand_seed=1, element_tp rand_range=0.2, element_tp lambda=0.5, element_tp initial_learning_rate=0.000001, element_tp epsilon=0.1);
     //
     void train(const sparse_tensor_tp& A, std::ostream& mylog = TF_log);
     //
@@ -70,7 +71,7 @@ public:
     
     void clear();
     // for test
-    void print();
+    void print(const sparse_tensor_tp& A);
     
 private:
     template<class Input_it1, class Input_it2, class Input_it3, class Output_it>
@@ -124,38 +125,37 @@ void TF<dim>::train(const sparse_tensor_tp& A, std::ostream& mylog)
     //
     mylog<<"Start training..."<<std::endl;
     format_print(mylog, "epoch", "loss", "gradient_norm", "time(s)");
-    format_print(mylog, 0, calculate_loss(A), "unknow", 0);
+    format_print(mylog, 0, (long long)calculate_loss(A), "unknow", 0);
 	wjy::Timer timer;
 	timer.start();
-    size_t epoch_size = 10;
+    size_t epoch_size = 5000;
     for (size_t iter = 0; iter<max_iter_num; iter++)
     {
         // gradient descent
         //auto gradient = calculate_gradient(A);
+		aaaaa = iter;
+
         auto gradient = calculate_random_gradient(A);
-        
-		auto m1 = std::max_element(gradient.begin(), gradient.end());
-		auto m2 = std::min_element(gradient.begin(), gradient.end());
-		element_tp max_g = std::max(std::abs(*m1),std::abs(*m2));
-        
-		//element_tp learning_rate = (std::log(max_g)/std::log(10))+1;
-		//learning_rate = std::pow(0.1, learning_rate) / (iter+1);
-		auto learning_rate = initial_learning_rate;// / (iter+1);
-		//for (int i=0;i<10;i++) std::cout<<gradient[i]<<" ";std::cout<<std::endl;
-		//std::cout<<"max g "<<max_g<<std::endl;
+		auto learning_rate = initial_learning_rate / (std::log((iter/epoch_size)+3));
         update_parameters(gradient, learning_rate);
         // print log
         if ( (iter % epoch_size)==(epoch_size-1) )
         {
+			//auto gradient = calculate_gradient(A);
+			//update_parameters(gradient, learning_rate);
             auto gradient_norm = std::inner_product(gradient.begin(), gradient.end(),gradient.begin(),static_cast<element_tp>(0));
 			timer.end();
-            format_print(mylog, iter/epoch_size+1, calculate_loss(A), gradient_norm, timer.get_duration_s());
+            format_print(mylog, iter/epoch_size+1, (long long)calculate_loss(A), gradient_norm, timer.get_duration_s());
             // stop condition
             if ( std::sqrt(gradient_norm) < epsilon ) break;
         }
-        //if (iter == 500)break;
+		//std::cout<<" 4 "<<std::endl;
+        //if (iter == 1)break;
     }
     mylog<<"Finished!"<<std::endl;
+	auto gradient = calculate_gradient(A);
+	auto gradient_norm = std::inner_product(gradient.begin(), gradient.end(),gradient.begin(),static_cast<element_tp>(0));
+	mylog<<"gradient norm:"<<gradient_norm<<std::endl;
     //
     iterators.clear();
 }
@@ -216,9 +216,19 @@ void TF<dim>::clear()
 
 // for test
 template<size_t dim>
-void TF<dim>::print()
+void TF<dim>::print(const sparse_tensor_tp& A)
 {
-    std::cout<<"hello world!"<<std::endl;
+	element_tp max = 0;
+	int i = 0;
+    for (auto & a : A) 
+	{
+		auto pre = std::abs(predict(a.first));
+		//	if (pre > 10) std::cout<<++i<<std::endl;
+		max = std::max(max, pre);
+	}
+	std::cout<<max<<std::endl;
+	auto l = calculate_loss(A);
+	std::cout<<(long long)l<<std::endl;
 }
 
 template<size_t dim>
@@ -363,23 +373,27 @@ template<size_t dim>
 std::vector< typename TF<dim>::element_tp > TF<dim>::calculate_random_gradient(const sparse_tensor_tp& A) const
 {
     // initialize gradient;
+	//if (aaaaa == 3070) std::clog<<"random gradient 1 ";
     std::vector< element_tp > gradient;
     size_t temp = tensor_s.size();
     for (auto & parameter : parameters) temp+= parameter.size();
     gradient.resize(temp, 0);
     // tensor_s's F-norm's gradient
+	//if (aaaaa == 3070) std::clog<<" 2 ";
     add_to(gradient.rbegin(), gradient.rbegin()+tensor_s.size(), tensor_s.rbegin(), 2*lambda);
     // random a mini-batch
-    std::uniform_int_distribution uid<size_t>(0, iterators.size()-1);
+	//if (aaaaa == 3070) std::clog<<" 3 ";
+    std::uniform_int_distribution<size_t> uid(0, iterators.size()-2);
     auto sample = uid(mt);
     std::unordered_set< size_t > flag;
+	//if (aaaaa == 3070) std::clog<<" sample: "<<sample<<" size: "<<iterators.size();
     for (auto it = iterators[sample]; it!= iterators[sample+1]; it++)
     {
         auto & indexes = it->first;
         auto & value = it->second;
         element_tp pred = predict( indexes );
         auto temp = (pred - value)*2;
-        gradient_it1 = gradient.begin();
+        auto gradient_it1 = gradient.begin(), gradient_it2 = gradient_it1;
         for (size_t i=0; i<dim; i++)
         {
             auto g_v = tensor_s_multiply_n_vector(indexes, {i});
@@ -387,11 +401,11 @@ std::vector< typename TF<dim>::element_tp > TF<dim>::calculate_random_gradient(c
             add_to(gradient_it2, gradient_it2+parameters_ranks[i], g_v.begin(), temp);
             auto dis = std::distance(gradient.begin(), gradient_it2);
             // v's F-norm's gradient
-            if (flag.cout(dis)==0)
+            if (flag.count(dis)==0)
             {
                 add_to(gradient_it2, gradient_it2+parameters_ranks[i],
                        parameters[i].begin() + parameters_ranks[i]*indexes[i],
-                       2*lambda;
+                       2*lambda
                        );
                 flag.insert(dis);
             }
@@ -400,6 +414,7 @@ std::vector< typename TF<dim>::element_tp > TF<dim>::calculate_random_gradient(c
         auto g_s = calculate_s_gradient_at(indexes);
         add_to(gradient_it1, gradient.end(), g_s.begin(), temp);
     }
+	//if (aaaaa == 3070) std::clog<<" end "<<std::endl;
     return gradient;
 }
 

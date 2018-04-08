@@ -39,10 +39,13 @@ private:
     //
     element_tp lambda;
     element_tp initial_learning_rate, epsilon;
-    size_t max_iter_num;
+    size_t max_iter_num, mini_batch_size;
     //
     std::mt19937 mt;
     element_tp rand_range;
+    // store iterators for mini-batch sgd
+    std::vector< sparse_tensor_tp::const_iterator > iterators;
+    
 public:
     TF() = default;
     // movable
@@ -56,7 +59,7 @@ public:
 
     // initialize matrix v,u by random real number from [-rand_range, rand_range]
     // if rand_seed = -1 use std::random_device as the seed, else use rand_seed
-    void initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num=20000, int rand_seed=1, element_tp rand_range=0.2, element_tp lambda=0.5, element_tp initial_learning_rate=0.000001, element_tp epsilon=0.1);
+    void initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num=20000, size_t mini_batch_size=1000, int rand_seed=1, element_tp rand_range=0.2, element_tp lambda=0.5, element_tp initial_learning_rate=0.000001, element_tp epsilon=0.1);
     //
     void train(const sparse_tensor_tp& A, std::ostream& mylog = TF_log);
     //
@@ -80,6 +83,7 @@ private:
     element_tp calculate_loss(const sparse_tensor_tp& A) const;
     //
     std::vector< element_tp > calculate_gradient(const sparse_tensor_tp& A) const;
+    std::vector< element_tp > calculate_random_gradient(const sparse_tensor_tp& A) const;
     std::vector< element_tp > calculate_s_gradient_at(const sparse_tensor_index_tp&) const;
     
     void update_parameters(const std::vector< element_tp > gradient, element_tp learning_rate);
@@ -93,13 +97,14 @@ template<size_t dim>
 std::ostringstream TF<dim>::TF_log;
 
 template<size_t dim>
-void TF<dim>::initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num, int rand_seed, element_tp rand_range, element_tp lambda, element_tp initial_learning_rate, element_tp epsilon)
+void TF<dim>::initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num, size_t mini_batch_size, int rand_seed, element_tp rand_range, element_tp lambda, element_tp initial_learning_rate, element_tp epsilon)
 {
     this->parameters_ranks      = parameters_ranks;
     this->rand_range            = rand_range;
     this->lambda                = lambda;
     this->initial_learning_rate = initial_learning_rate;
     this->max_iter_num          = max_iter_num;
+    this->mini_batch_size       = mini_batch_size;
     this->epsilon               = epsilon;
     
     if (rand_seed == -1)
@@ -122,12 +127,13 @@ void TF<dim>::train(const sparse_tensor_tp& A, std::ostream& mylog)
     format_print(mylog, 0, calculate_loss(A), "unknow", 0);
 	wjy::Timer timer;
 	timer.start();
-    size_t epoch_size = 1;
+    size_t epoch_size = 10;
     for (size_t iter = 0; iter<max_iter_num; iter++)
     {
         // gradient descent
-        auto gradient = calculate_gradient(A);
-		
+        //auto gradient = calculate_gradient(A);
+        auto gradient = calculate_random_gradient(A);
+        
 		auto m1 = std::max_element(gradient.begin(), gradient.end());
 		auto m2 = std::min_element(gradient.begin(), gradient.end());
 		element_tp max_g = std::max(std::abs(*m1),std::abs(*m2));
@@ -150,6 +156,8 @@ void TF<dim>::train(const sparse_tensor_tp& A, std::ostream& mylog)
         //if (iter == 500)break;
     }
     mylog<<"Finished!"<<std::endl;
+    //
+    iterators.clear();
 }
 
 template<size_t dim>
@@ -203,6 +211,7 @@ void TF<dim>::clear()
 {
     for (auto & parameter : parameters) parameter.clear();
     tensor_s.clear();
+    iterators.clear();
 }
 
 // for test
@@ -279,6 +288,16 @@ void TF<dim>::generate_parameters(const sparse_tensor_tp& A)
         s_length *= parameters_ranks[i];
     }
     rand_generate_vector(tensor_s, s_length);
+    //
+    size_t n = A.size() / mini_batch_size;
+    iterators.resize(n+1);
+    auto it = A.begin();
+    for (size_t i=0; i<n; i++)
+    {
+        iterators[i] = it;
+        for (size_t j=0; j<mini_batch_size; j++) it++;
+    }
+    iterators[n] = A.end();
 }
 
 template<size_t dim>
@@ -332,6 +351,50 @@ std::vector< typename TF<dim>::element_tp > TF<dim>::calculate_gradient(const sp
             auto g_v = tensor_s_multiply_n_vector(indexes, {i});
             gradient_it2 = gradient_it1 + parameters_ranks[i]*indexes[i];
             add_to(gradient_it2, gradient_it2+parameters_ranks[i], g_v.begin(), temp);
+            gradient_it1 += parameters[i].size();
+        }
+        auto g_s = calculate_s_gradient_at(indexes);
+        add_to(gradient_it1, gradient.end(), g_s.begin(), temp);
+    }
+    return gradient;
+}
+
+template<size_t dim>
+std::vector< typename TF<dim>::element_tp > TF<dim>::calculate_random_gradient(const sparse_tensor_tp& A) const
+{
+    // initialize gradient;
+    std::vector< element_tp > gradient;
+    size_t temp = tensor_s.size();
+    for (auto & parameter : parameters) temp+= parameter.size();
+    gradient.resize(temp, 0);
+    // tensor_s's F-norm's gradient
+    add_to(gradient.rbegin(), gradient.rbegin()+tensor_s.size(), tensor_s.rbegin(), 2*lambda);
+    // random a mini-batch
+    std::uniform_int_distribution uid<size_t>(0, iterators.size()-1);
+    auto sample = uid(mt);
+    std::unordered_set< size_t > flag;
+    for (auto it = iterators[sample]; it!= iterators[sample+1]; it++)
+    {
+        auto & indexes = it->first;
+        auto & value = it->second;
+        element_tp pred = predict( indexes );
+        auto temp = (pred - value)*2;
+        gradient_it1 = gradient.begin();
+        for (size_t i=0; i<dim; i++)
+        {
+            auto g_v = tensor_s_multiply_n_vector(indexes, {i});
+            gradient_it2 = gradient_it1 + parameters_ranks[i]*indexes[i];
+            add_to(gradient_it2, gradient_it2+parameters_ranks[i], g_v.begin(), temp);
+            auto dis = std::distance(gradient.begin(), gradient_it2);
+            // v's F-norm's gradient
+            if (flag.cout(dis)==0)
+            {
+                add_to(gradient_it2, gradient_it2+parameters_ranks[i],
+                       parameters[i].begin() + parameters_ranks[i]*indexes[i],
+                       2*lambda;
+                       );
+                flag.insert(dis);
+            }
             gradient_it1 += parameters[i].size();
         }
         auto g_s = calculate_s_gradient_at(indexes);

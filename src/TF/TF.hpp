@@ -136,7 +136,9 @@ void TF<dim>::train(const sparse_tensor_tp& A, std::ostream& mylog)
 		aaaaa = iter;
 
         auto gradient = calculate_random_gradient(A);
-		auto learning_rate = initial_learning_rate / (std::log((iter/epoch_size)+3));
+		size_t temp = iter/(50*epoch_size);
+		element_tp half = std::pow(2, temp);
+		auto learning_rate = initial_learning_rate / (half);
         update_parameters(gradient, learning_rate);
         // print log
         if ( (iter % epoch_size)==(epoch_size-1) )

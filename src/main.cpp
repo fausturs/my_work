@@ -22,7 +22,7 @@ int main(int args, const char* argv[])
 	TF<3> tf;
 	tf.initialize({10, 10, 10}, 1000000, 1000, 1, 1, 0.5, learning_rate);
 	tf.train(t, std::cout);
-	tf.save("../model/20180408_1.mod");
+	tf.save("../model/20180408_2.mod");
     return 0;
 }
 

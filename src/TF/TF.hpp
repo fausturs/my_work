@@ -45,6 +45,7 @@ private:
     element_tp rand_range;
     // store iterators for mini-batch sgd
     std::vector< typename sparse_tensor_tp::const_iterator > iterators;
+    std::unordered_map< size_t, size_t > counter;
     
 	size_t aaaaa;
 public:
@@ -278,12 +279,17 @@ std::vector< typename TF<dim>::element_tp > TF<dim>::tensor_s_multiply_n_vector(
 template<size_t dim>
 void TF<dim>::generate_parameters(const sparse_tensor_tp& A)
 {
+    size_t n = A.size() / mini_batch_size;
+    iterators.resize(n+1);
     tensor_A_dims = {0};
-    for (auto & a : A)
+    size_t k=0;
+    for (auto a=A.begin(); a!=A.end(); a++,k++)
     {
-        auto & indexes = a.first;
+        auto & indexes = a->first;
+        if (k%mini_batch_size == 0) iterators[k/mini_batch_size] = a;
         for (size_t i=0; i<dim; i++) tensor_A_dims[i] = std::max(tensor_A_dims[i], indexes[i]+1);
     }
+    iterators[n] = A.end();
     clear();
     // gen_rand() generate a real number uniformly from [-rand_range, rand_range],
     // and use mt as the random device
@@ -301,15 +307,16 @@ void TF<dim>::generate_parameters(const sparse_tensor_tp& A)
     }
     rand_generate_vector(tensor_s, s_length);
     //
-    size_t n = A.size() / mini_batch_size;
-    iterators.resize(n+1);
-    auto it = A.begin();
-    for (size_t i=0; i<n; i++)
+    for (auto & a : A)
     {
-        iterators[i] = it;
-        for (size_t j=0; j<mini_batch_size; j++) it++;
+        auto & indexes = a.first;
+        size_t dis = 0;
+        for (size_t i=0; i<dim; i++)
+        {
+            counter[dis+indexes[i]*parameters_ranks[i]]++;
+            dis += parameters[i].size();
+        }
     }
-    iterators[n] = A.end();
 }
 
 template<size_t dim>
@@ -382,7 +389,7 @@ std::vector< typename TF<dim>::element_tp > TF<dim>::calculate_random_gradient(c
     gradient.resize(temp, 0);
     // tensor_s's F-norm's gradient
 	//if (aaaaa == 3070) std::clog<<" 2 ";
-    add_to(gradient.rbegin(), gradient.rbegin()+tensor_s.size(), tensor_s.rbegin(), 2*lambda);
+    add_to(gradient.rbegin(), gradient.rbegin()+tensor_s.size(), tensor_s.rbegin(), 2*lambda*mini_batch_size/(A.size()));
     // random a mini-batch
 	//if (aaaaa == 3070) std::clog<<" 3 ";
     std::uniform_int_distribution<size_t> uid(0, iterators.size()-2);
@@ -403,14 +410,8 @@ std::vector< typename TF<dim>::element_tp > TF<dim>::calculate_random_gradient(c
             add_to(gradient_it2, gradient_it2+parameters_ranks[i], g_v.begin(), temp);
             auto dis = std::distance(gradient.begin(), gradient_it2);
             // v's F-norm's gradient
-            if (flag.count(dis)==0)
-            {
-                add_to(gradient_it2, gradient_it2+parameters_ranks[i],
-                       parameters[i].begin() + parameters_ranks[i]*indexes[i],
-                       2*lambda
-                       );
-                flag.insert(dis);
-            }
+            add_to(gradient_it2, gradient_it2+parameters_ranks[i], parameters[i].begin() + parameters_ranks[i]*indexes[i], 2*lambda/(counter[dis]));
+
             gradient_it1 += parameters[i].size();
         }
         auto g_s = calculate_s_gradient_at(indexes);

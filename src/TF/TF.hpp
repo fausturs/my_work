@@ -135,12 +135,14 @@ void TF<dim>::train(const sparse_tensor_tp& A, std::ostream& mylog)
         // gradient descent
         //auto gradient = calculate_gradient(A);
 		aaaaa = iter;
-
+		//std::clog<<" iter   ";
         auto gradient = calculate_random_gradient(A);
-		size_t temp = iter/(50*epoch_size);
+		//std::clog<<" 1 ";
+		size_t temp = iter/(200*epoch_size);
 		element_tp half = std::pow(2, temp);
 		auto learning_rate = initial_learning_rate / (half);
         update_parameters(gradient, learning_rate);
+		//std::clog<<" 2 "<<std::endl;
         // print log
         if ( (iter % epoch_size)==(epoch_size-1) )
         {
@@ -279,6 +281,7 @@ std::vector< typename TF<dim>::element_tp > TF<dim>::tensor_s_multiply_n_vector(
 template<size_t dim>
 void TF<dim>::generate_parameters(const sparse_tensor_tp& A)
 {
+    clear();
     size_t n = A.size() / mini_batch_size;
     iterators.resize(n+1);
     tensor_A_dims = {0};
@@ -290,7 +293,6 @@ void TF<dim>::generate_parameters(const sparse_tensor_tp& A)
         for (size_t i=0; i<dim; i++) tensor_A_dims[i] = std::max(tensor_A_dims[i], indexes[i]+1);
     }
     iterators[n] = A.end();
-    clear();
     // gen_rand() generate a real number uniformly from [-rand_range, rand_range],
     // and use mt as the random device
     std::uniform_real_distribution<element_tp> urd(-rand_range, rand_range);
@@ -382,20 +384,20 @@ template<size_t dim>
 std::vector< typename TF<dim>::element_tp > TF<dim>::calculate_random_gradient(const sparse_tensor_tp& A) const
 {
     // initialize gradient;
-	//if (aaaaa == 3070) std::clog<<"random gradient 1 ";
+	//if (aaaaa == 0) std::clog<<"random gradient 1 ";
     std::vector< element_tp > gradient;
     size_t temp = tensor_s.size();
     for (auto & parameter : parameters) temp+= parameter.size();
     gradient.resize(temp, 0);
     // tensor_s's F-norm's gradient
-	//if (aaaaa == 3070) std::clog<<" 2 ";
+	//if (aaaaa == 0) std::clog<<" 2 ";
     add_to(gradient.rbegin(), gradient.rbegin()+tensor_s.size(), tensor_s.rbegin(), 2*lambda*mini_batch_size/(A.size()));
     // random a mini-batch
-	//if (aaaaa == 3070) std::clog<<" 3 ";
+	//if (aaaaa == 0) std::clog<<" 3 ";
     std::uniform_int_distribution<size_t> uid(0, iterators.size()-2);
     auto sample = uid(mt);
     std::unordered_set< size_t > flag;
-	//if (aaaaa == 3070) std::clog<<" sample: "<<sample<<" size: "<<iterators.size();
+	//if (aaaaa == 0) std::clog<<" sample: "<<sample<<" size: "<<iterators.size();
     for (auto it = iterators[sample]; it!= iterators[sample+1]; it++)
     {
         auto & indexes = it->first;
@@ -410,14 +412,14 @@ std::vector< typename TF<dim>::element_tp > TF<dim>::calculate_random_gradient(c
             add_to(gradient_it2, gradient_it2+parameters_ranks[i], g_v.begin(), temp);
             auto dis = std::distance(gradient.begin(), gradient_it2);
             // v's F-norm's gradient
-            add_to(gradient_it2, gradient_it2+parameters_ranks[i], parameters[i].begin() + parameters_ranks[i]*indexes[i], 2*lambda/(counter[dis]));
+            add_to(gradient_it2, gradient_it2+parameters_ranks[i], parameters[i].begin() + parameters_ranks[i]*indexes[i], 2*lambda/(counter.at(dis)));
 
             gradient_it1 += parameters[i].size();
         }
         auto g_s = calculate_s_gradient_at(indexes);
         add_to(gradient_it1, gradient.end(), g_s.begin(), temp);
     }
-	//if (aaaaa == 3070) std::clog<<" end "<<std::endl;
+	//if (aaaaa == 0) std::clog<<" end "<<std::endl;
     return gradient;
 }
 

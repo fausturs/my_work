@@ -133,7 +133,7 @@ void read_demand_level(const std::string& path = "../data/demand_level.txt")
 	myin.close();
 }
 
-void read_jdid_company_position(const std::string& path = "../data/jdid_company_position.txt")
+void read_jdid_company_position(const std::string& path = "../data/raw_data/jdid_company_position.txt")
 {
     std::ifstream myin(path);
     assert(myin);
@@ -220,7 +220,7 @@ bool skill_fliter(const std::string& skill)
 }
 bool company_fliter(const std::string& company)
 {
-    return (company_counter[company] >= 10);
+    return (company_counter[company] >= 20);
 }
 bool position_fliter(const std::string& position)
 {
@@ -229,7 +229,7 @@ bool position_fliter(const std::string& position)
 void save_new_data(const wjy::sparse_tensor<double, 3> t)
 {
     std::unordered_map< std::string, size_t > skill_to_new_id, company_to_new_id, position_to_new_id;
-    auto save_something = [](auto fliter, auto & old_map, auto & new_map, auto & path){
+    auto save_something = [](auto fliter, auto & old_map, auto & new_map, const auto & path){
         std::ofstream myout(path);
         assert(myout);
         size_t n = 0;
@@ -237,7 +237,7 @@ void save_new_data(const wjy::sparse_tensor<double, 3> t)
         {
             if (!fliter(p.first)) continue;
             new_map[p.first] = n++;
-            myout<<p.first<<std:endl;
+            myout<<p.first<<std::endl;
         }
         myout.close();
     };
@@ -277,7 +277,7 @@ std::pair< std::string, std::string > get_company_position(int id)
 //for test
 void test()
 {
-	read_all();
+	//read_all();
 	//create_tensor();
 }
 

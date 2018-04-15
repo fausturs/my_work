@@ -63,7 +63,7 @@ public:
     // if rand_seed = -1 use std::random_device as the seed, else use rand_seed
     void initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num=200000, size_t mini_batch_size=1000, int rand_seed=1, element_tp rand_range=0.2, element_tp lambda=0.5, element_tp initial_learning_rate=0.000001, element_tp epsilon=0.1);
     //
-    void train(const sparse_tensor_tp& A, std::ostream& mylog = TF_log);
+    void train(const sparse_tensor_tp& A, bool need_init_parameter=true, std::ostream& mylog = TF_log);
     //
     element_tp predict(const sparse_tensor_index_tp&) const;
     
@@ -80,7 +80,7 @@ private:
     
     std::vector< element_tp> tensor_s_multiply_n_vector(const sparse_tensor_index_tp&, const std::unordered_set<size_t>& except = {})const;
     //
-    void generate_parameters(const sparse_tensor_tp& A);
+    void generate_parameters(const sparse_tensor_tp& A, bool need_init_parameter);
 
     element_tp calculate_loss(const sparse_tensor_tp& A) const;
     //
@@ -114,33 +114,33 @@ void TF<dim>::initialize(const std::array< size_t, dim > parameters_ranks, size_
     else
         mt = std::mt19937( rand_seed );
     
-    clear();
+    //clear();
 }
 
 template<size_t dim>
-void TF<dim>::train(const sparse_tensor_tp& A, std::ostream& mylog)
+void TF<dim>::train(const sparse_tensor_tp& A, bool need_init_parameter, std::ostream& mylog)
 {
     if (A.size() == 0) return;
     // generate parameter u,v,w and s
-    generate_parameters(A);
+    generate_parameters(A, need_init_parameter);
     //
     mylog<<"Start training..."<<std::endl;
     format_print(mylog, "epoch", "loss", "gradient_norm", "time(s)");
     format_print(mylog, 0, (long long)calculate_loss(A), "unknow", 0);
 	wjy::Timer timer;
 	timer.start();
-    size_t epoch_size = 5000;
+    size_t epoch_size = 1;
     for (size_t iter = 0; iter<max_iter_num; iter++)
     {
         // gradient descent
-        //auto gradient = calculate_gradient(A);
+        auto gradient = calculate_gradient(A);
 		aaaaa = iter;
 		//std::clog<<" iter   ";
-        auto gradient = calculate_random_gradient(A);
+        //auto gradient = calculate_random_gradient(A);
 		//std::clog<<" 1 ";
 		size_t temp = iter/(200*epoch_size);
-		element_tp half = std::pow(2, temp);
-		auto learning_rate = initial_learning_rate / (half);
+		element_tp half = iter/(5*epoch_size) + 1;
+		auto learning_rate = initial_learning_rate;// / (half);
         update_parameters(gradient, learning_rate);
 		//std::clog<<" 2 "<<std::endl;
         // print log
@@ -149,10 +149,11 @@ void TF<dim>::train(const sparse_tensor_tp& A, std::ostream& mylog)
 			//auto gradient = calculate_gradient(A);
 			//update_parameters(gradient, learning_rate);
             auto gradient_norm = std::inner_product(gradient.begin(), gradient.end(),gradient.begin(),static_cast<element_tp>(0));
+			gradient_norm = std::sqrt(gradient_norm);
 			timer.end();
             format_print(mylog, iter/epoch_size+1, (long long)calculate_loss(A), gradient_norm, timer.get_duration_s());
             // stop condition
-            if ( std::sqrt(gradient_norm) < epsilon ) break;
+            if ( gradient_norm < epsilon ) break;
         }
 		//std::cout<<" 4 "<<std::endl;
         //if (iter == 1)break;
@@ -160,7 +161,7 @@ void TF<dim>::train(const sparse_tensor_tp& A, std::ostream& mylog)
     mylog<<"Finished!"<<std::endl;
 	auto gradient = calculate_gradient(A);
 	auto gradient_norm = std::inner_product(gradient.begin(), gradient.end(),gradient.begin(),static_cast<element_tp>(0));
-	mylog<<"gradient norm:"<<gradient_norm<<std::endl;
+	mylog<<"gradient norm:"<<std::sqrt(gradient_norm)<<std::endl;
     //
     iterators.clear();
 }
@@ -196,17 +197,18 @@ void TF<dim>::load(const std::string& path)
     
     clear();
     auto load_vector = [&myin](auto& ve, size_t n){
-        ve.reserve(n);
-        std::copy_n(std::istream_iterator<element_tp>(myin), n, std::back_inserter(ve));
+        std::copy_n(std::istream_iterator<element_tp>(myin), n, ve.begin());
     };
     load_vector(tensor_A_dims, dim);
     load_vector(parameters_ranks, dim);
     size_t s_length = 1;
     for (size_t i=0; i<dim; i++)
     {
+        parameters[i].resize(tensor_A_dims[i]*parameters_ranks[i]);
         load_vector(parameters[i], tensor_A_dims[i]*parameters_ranks[i]);
         s_length *= parameters_ranks[i];
     }
+    tensor_s.resize(s_length);
     load_vector(tensor_s, s_length);
     myin.close();
 }
@@ -223,17 +225,9 @@ void TF<dim>::clear()
 template<size_t dim>
 void TF<dim>::print(const sparse_tensor_tp& A)
 {
-	element_tp max = 0;
-	int i = 0;
-    for (auto & a : A) 
-	{
-		auto pre = std::abs(predict(a.first));
-		//	if (pre > 10) std::cout<<++i<<std::endl;
-		max = std::max(max, pre);
-	}
-	std::cout<<max<<std::endl;
-	auto l = calculate_loss(A);
-	std::cout<<(long long)l<<std::endl;
+	for (auto x: parameters_ranks) std::cout<<x<<" ";std::cout<<std::endl;
+    for (auto x: tensor_A_dims) std::cout<<x<<" ";std::cout<<std::endl;
+    for (auto i=0; i<dim; i++) std::cout<<parameters[i].size()<<" ";std::cout<<std::endl;
 }
 
 template<size_t dim>
@@ -279,17 +273,18 @@ std::vector< typename TF<dim>::element_tp > TF<dim>::tensor_s_multiply_n_vector(
 
 //
 template<size_t dim>
-void TF<dim>::generate_parameters(const sparse_tensor_tp& A)
+void TF<dim>::generate_parameters(const sparse_tensor_tp& A, bool need_init_parameter)
 {
-    clear();
+    if (need_init_parameter) clear();
     size_t n = A.size() / mini_batch_size;
     iterators.resize(n+1);
-    tensor_A_dims = {0};
+    if (need_init_parameter) tensor_A_dims = {0};
     size_t k=0;
     for (auto a=A.begin(); a!=A.end(); a++,k++)
     {
         auto & indexes = a->first;
         if (k%mini_batch_size == 0) iterators[k/mini_batch_size] = a;
+		if (!need_init_parameter) continue;
         for (size_t i=0; i<dim; i++) tensor_A_dims[i] = std::max(tensor_A_dims[i], indexes[i]+1);
     }
     iterators[n] = A.end();
@@ -304,10 +299,11 @@ void TF<dim>::generate_parameters(const sparse_tensor_tp& A)
     size_t s_length = 1;
     for (size_t i=0; i<dim; i++)
     {
+		if (!need_init_parameter) continue;
         rand_generate_vector(parameters[i], parameters_ranks[i]*tensor_A_dims[i]);
         s_length *= parameters_ranks[i];
     }
-    rand_generate_vector(tensor_s, s_length);
+	if (need_init_parameter) rand_generate_vector(tensor_s, s_length);
     //
     for (auto & a : A)
     {

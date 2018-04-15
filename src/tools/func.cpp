@@ -15,45 +15,53 @@ std::vector< std::string >                  id_to_skill, id_to_company, id_to_po
 
 std::unordered_map< std::string, size_t >   demand_level;
 std::unordered_map< int, std::pair<std::string, std::string> >  jdid_company_position;
+
+std::unordered_map< std::string, int > skill_counter, company_counter, position_counter;
 //
-void read_all();
+
 std::pair< std::string, std::string > get_company_position(int id);
 std::list< std::pair<std::string, int> > parse_jd_demand(const std::vector< std::string >& jd, const std::unordered_map< std::string, size_t >& skill_list, const std::unordered_map< std::string, size_t >& demand_level);
 
-wjy::sparse_tensor<double, 3> create_tensor(const std::string& path)
+void read_raw_data();
+void prepare_filter();
+bool skill_fliter(const std::string& skill);
+bool company_fliter(const std::string& company);
+bool position_fliter(const std::string& position);
+void save_new_data(const wjy::sparse_tensor<double, 3> t);
+
+void create_tensor()
 {
-    std::ifstream myin(path);
-    assert(myin);
-    read_all();
+    read_raw_data();
+    prepare_filter();
     
+    std::ifstream myin("../data/raw_data/position_cut.txt");
+    assert(myin);
     wjy::sparse_tensor<double, 3> tensor;
     wjy::sparse_tensor_index<3> index = {0, 0, 0};
     std::string st_jd;
     while (std::getline(myin, st_jd))
     {
-		//std::cout<<st_jd<<"\n";
         auto job_description = split(st_jd, {',','/'});
         int id = std::atoi( job_description[0].c_str() );
-		//std::cout<<"idddddddddddddddddddddddddddddd "<<id<<"\n";
         std::pair<std::string, std::string> company_position;
 		if (jdid_company_position.find(id) == jdid_company_position.end()) continue;
 		company_position = jdid_company_position[id];
         // these two keys must in the map.
         index[0] = company_to_id[company_position.first];
         index[1] = position_to_id[company_position.second];
-		
+        if ((company_fliter(company_position.first) && position_fliter(company_position.second))==false)  continue;
         auto demand_level_list = parse_jd_demand(job_description, skill_to_id, demand_level);
-		//std::cout<<"id "<<id<<" size "<<demand_level_list.size()<<"\n";
         for (auto& skill_level : demand_level_list)
         {
-			//std::cout<<skill_level.first<<" "<<skill_level.second<<"\n";
             index[2] = skill_to_id[skill_level.first];
+            if (!skill_fliter(skill_level.first)) continue;
             tensor[ index ] = skill_level.second;
         }
 		//if (id > 30) break;
     }
 	myin.close();
-    return tensor;
+    //
+    save_new_data(tensor);
 }
 
 
@@ -99,17 +107,17 @@ void read_some_list(const std::string& path, std::unordered_map< std::string, si
 	myin.close();
 }
 
-void read_skill_list(const std::string& path = "../data/skill_list.txt")
+void read_skill_list(const std::string& path)
 {
     return read_some_list(path, skill_to_id, id_to_skill);
 }
 
-void read_company_list(const std::string& path = "../data/company_list.txt")
+void read_company_list(const std::string& path)
 {
     return read_some_list(path, company_to_id, id_to_company);
 }
 
-void read_position_list(const std::string& path = "../data/position_list.txt")
+void read_position_list(const std::string& path)
 {
     return read_some_list(path, position_to_id, id_to_position);
 }
@@ -141,13 +149,23 @@ void read_jdid_company_position(const std::string& path = "../data/jdid_company_
 	myin.close();
 }
 
-void read_all()
+void read_raw_data()
 {
-    read_skill_list();
-    read_company_list();
-    read_position_list();
+    read_skill_list("../data/raw_data/skill_list.txt");
+    read_company_list("../data/raw_data/company_list.txt");
+    read_position_list("../data/raw_data/position_list.txt");
     read_demand_level();
-	read_jdid_company_position();
+    read_jdid_company_position();
+}
+
+void read_all(wjy::Date data_date)
+{
+    auto date = data_date.to_string("");
+    read_skill_list("../data/skill_list_"+date+".txt");
+    read_company_list("../data/company_list_"+date+".txt");
+    read_position_list("../data/position_list_"+date+".txt");
+//    read_demand_level();
+//    read_jdid_company_position();
 }
 
 
@@ -172,6 +190,76 @@ std::list< std::pair<std::string, int> > parse_jd_demand(const std::vector< std:
     }while (i!=1);// jd[0] is the id for this jd
     return skill_level_list;
 }
+
+void prepare_filter()
+{
+    skill_counter.clear();
+    company_counter.clear();
+    position_counter.clear();
+    for (auto &cp : jdid_company_position)
+    {
+        auto & com = cp.second.first;
+        auto & pos = cp.second.second;
+        company_counter[com]++;
+        position_counter[pos]++;
+    }
+    std::ifstream myin("../data/raw_data/position_cut.txt");
+    assert(myin);
+    std::string st_jd;
+    while (std::getline(myin, st_jd))
+    {
+        auto job_description = split(st_jd, {',','/'});
+        for (auto & word : job_description)
+            if (skill_to_id.find(word)!=skill_to_id.end()) skill_counter[word]++;
+    }
+    myin.close();
+}
+bool skill_fliter(const std::string& skill)
+{
+    return (skill_counter[skill] >= 10);
+}
+bool company_fliter(const std::string& company)
+{
+    return (company_counter[company] >= 10);
+}
+bool position_fliter(const std::string& position)
+{
+    return (position_counter[position] >= 10);
+}
+void save_new_data(const wjy::sparse_tensor<double, 3> t)
+{
+    std::unordered_map< std::string, size_t > skill_to_new_id, company_to_new_id, position_to_new_id;
+    auto save_something = [](auto fliter, auto & old_map, auto & new_map, auto & path){
+        std::ofstream myout(path);
+        assert(myout);
+        size_t n = 0;
+        for (auto & p : old_map)
+        {
+            if (!fliter(p.first)) continue;
+            new_map[p.first] = n++;
+            myout<<p.first<<std:endl;
+        }
+        myout.close();
+    };
+    auto today = wjy::Date{}.to_string("");
+    auto path = "../data/"+today+"/";
+    save_something(skill_fliter, skill_to_id, skill_to_new_id, path+"skill_list_"+today+".txt");
+    save_something(company_fliter, company_to_id, company_to_new_id, path+"company_list_"+today+".txt");
+    save_something(position_fliter, position_to_id, position_to_new_id, path+"position_list_"+today+".txt");
+    
+    wjy::sparse_tensor<double, 3> new_tensor;
+    wjy::sparse_tensor_index<3> new_index;
+    for (auto & p : t)
+    {
+        auto & old_index = p.first;
+        new_index[0] = company_to_new_id[ id_to_company[ old_index[0] ] ];
+        new_index[1] = position_to_new_id[ id_to_position[ old_index[1] ] ];
+        new_index[2] = skill_to_new_id[ id_to_skill[ old_index[2] ] ];
+        new_tensor[new_index] = p.second;
+    }
+    wjy::save_sparse_tensor(new_tensor, path+"tensor_dim3_"+today+".txt");
+}
+
 
 /*
 std::pair< std::string, std::string > get_company_position(int id)

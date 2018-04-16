@@ -17,6 +17,23 @@ extern std::vector< std::string >                  id_to_skill, id_to_company, i
 
 std::vector< std::string > split(const std::string& st, const std::unordered_set< char >& spliter = {','});
 
+template<class T>
+std::pair< T, T > split_tensor(const T & data, double ratio ,size_t rand_seed=1)
+{
+	T data1, data2;
+	std::mt19937 mt(rand_seed);
+	if (rand_seed == -1) mt = std::mt19937{ std::random_device{}() };
+	std::uniform_real_distribution<double> urd(0, 1);
+	for (auto & p : data)
+	{
+		if (urd(mt) < ratio)
+			data1.insert(p);
+		else
+			data2.insert(p);
+	}
+	return std::make_pair(data1, data2);
+} 
+
 void read_all(wjy::Date data_date);
 void create_tensor();
 

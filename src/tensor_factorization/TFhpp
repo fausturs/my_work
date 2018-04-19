@@ -39,7 +39,7 @@ private:
     //
     element_tp lambda;
     element_tp initial_learning_rate, epsilon;
-    size_t max_iter_num, mini_batch_size;
+    size_t max_iter_num, mini_batch_size, epoch_size;
     //
     mutable std::mt19937 mt;
     element_tp rand_range;
@@ -61,7 +61,7 @@ public:
 
     // initialize matrix v,u by random real number from [-rand_range, rand_range]
     // if rand_seed = -1 use std::random_device as the seed, else use rand_seed
-    void initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num=200000, size_t mini_batch_size=1000, int rand_seed=1, element_tp rand_range=0.2, element_tp lambda=0.5, element_tp initial_learning_rate=0.000001, element_tp epsilon=0.1);
+    void initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num=200000, size_t epoch_size=5000, size_t mini_batch_size=1000, int rand_seed=1, element_tp rand_range=0.2, element_tp lambda=0.5, element_tp initial_learning_rate=0.000001, element_tp epsilon=0.1);
     //
     void train(const sparse_tensor_tp& A, bool need_init_parameter=true, std::ostream& mylog = TF_log);
     //
@@ -99,13 +99,14 @@ template<size_t dim>
 std::ostringstream TF<dim>::TF_log;
 
 template<size_t dim>
-void TF<dim>::initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num, size_t mini_batch_size, int rand_seed, element_tp rand_range, element_tp lambda, element_tp initial_learning_rate, element_tp epsilon)
+void TF<dim>::initialize(const std::array< size_t, dim > parameters_ranks, size_t max_iter_num, size_t epoch_size, size_t mini_batch_size, int rand_seed, element_tp rand_range, element_tp lambda, element_tp initial_learning_rate, element_tp epsilon)
 {
     this->parameters_ranks      = parameters_ranks;
     this->rand_range            = rand_range;
     this->lambda                = lambda;
     this->initial_learning_rate = initial_learning_rate;
     this->max_iter_num          = max_iter_num;
+	this->epoch_size			= epoch_size;
     this->mini_batch_size       = mini_batch_size;
     this->epsilon               = epsilon;
     
@@ -129,25 +130,20 @@ void TF<dim>::train(const sparse_tensor_tp& A, bool need_init_parameter, std::os
     format_print(mylog, 0, (long long)calculate_loss(A), "unknow", 0);
 	wjy::Timer timer;
 	timer.start();
-    size_t epoch_size = 1;
     for (size_t iter = 0; iter<max_iter_num; iter++)
     {
         // gradient descent
         auto gradient = calculate_gradient(A);
-		aaaaa = iter;
-		//std::clog<<" iter   ";
         //auto gradient = calculate_random_gradient(A);
-		//std::clog<<" 1 ";
+
 		size_t temp = iter/(200*epoch_size);
 		element_tp half = iter/(5*epoch_size) + 1;
 		auto learning_rate = initial_learning_rate;// / (half);
         update_parameters(gradient, learning_rate);
-		//std::clog<<" 2 "<<std::endl;
         // print log
         if ( (iter % epoch_size)==(epoch_size-1) )
         {
 			//auto gradient = calculate_gradient(A);
-			//update_parameters(gradient, learning_rate);
             auto gradient_norm = std::inner_product(gradient.begin(), gradient.end(),gradient.begin(),static_cast<element_tp>(0));
 			gradient_norm = std::sqrt(gradient_norm);
 			timer.end();
@@ -155,8 +151,6 @@ void TF<dim>::train(const sparse_tensor_tp& A, bool need_init_parameter, std::os
             // stop condition
             if ( gradient_norm < epsilon ) break;
         }
-		//std::cout<<" 4 "<<std::endl;
-        //if (iter == 1)break;
     }
     mylog<<"Finished!"<<std::endl;
 	auto gradient = calculate_gradient(A);

@@ -36,14 +36,13 @@ std::shared_ptr< wjy::trainer<double> > sgd = std::make_shared< wjy::SGD<double>
 
 int main(int args, const char* argv[])
 {
-    
     wjy::sparse_tensor<double ,3> tensor;
     wjy::load_sparse_tensor(tensor, "../data/test_tensor_dim3_2.txt");
     wjy::tucker_decomposition<double, 3> td(std::move(tensor), {10, 10, 10}, 0.5, 20);
     
 
     td.train(sgd, std::cout, distribution1);
-    
+
     return 0;
 }
 

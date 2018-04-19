@@ -11,6 +11,7 @@
 #include "linear_regression.hpp"
 #include "tensor_factorization_predictor.hpp"
 #include "tucker_decomposition.hpp"
+#include "canonical_decomposition.hpp"
 
 
 std::mt19937 mt1(1);
@@ -38,32 +39,13 @@ int main(int args, const char* argv[])
 {
     wjy::sparse_tensor<double ,3> tensor;
     wjy::load_sparse_tensor(tensor, "../data/test_tensor_dim3_2.txt");
-    wjy::tucker_decomposition<double, 3> td(std::move(tensor), {10, 10, 10}, 0.5, 20);
-    
-
-    td.train(sgd, std::cout, distribution1);
+//    wjy::tucker_decomposition<double, 3> td(std::move(tensor), {10, 10, 10}, 0.5, 20);
+//    td.train(sgd, std::cout, distribution1);
+    wjy::canonical_decomposition<double, 3> cd(std::move(tensor), 10, 0.5, 20);
+    cd.train(sgd, std::cout, distribution1);
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

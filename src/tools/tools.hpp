@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <array>
 #include <numeric>
 #include <algorithm>
 
@@ -70,6 +71,14 @@ namespace wjy {
                 *(out_first++) = std::inner_product(temp.begin(), temp.end(), vector_first, static_cast<T>(0) );
             }
         }
+    }
+    
+    template <typename T, size_t k>
+    std::array<T, k> a_fill_array(T x)
+    {
+        std::array<T, k> a;
+        for (auto & a_i : a) a_i = x;
+        return a;
     }
     
 }

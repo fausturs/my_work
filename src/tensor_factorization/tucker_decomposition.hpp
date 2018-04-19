@@ -28,6 +28,7 @@ namespace wjy {
         virtual std::vector<T> mini_batch_stochastic_gradient(const std::vector<T>&, size_t) const override;
         virtual T loss(const std::vector<T>&) const override;
         virtual T _predict(const std::vector<T>&, const sparse_tensor_index<kth_order>&) const override;
+        
         size_t tensor_s_size;
         //  coefficient of norms
         T lambda;
@@ -159,13 +160,13 @@ namespace wjy {
     void tucker_decomposition<T, kth_order>::save_parameters(std::ostream& myout) const
     {
         base_class::save_parameters(myout);
-        myout<<lambda<<tensor_s_size;
+        myout<<tensor_s_size<<std::endl;
     }
     template< typename T, size_t kth_order >
     void tucker_decomposition<T, kth_order>::load_parameters(std::istream& myin)
     {
         base_class::load_parameters(myin);
-        myin>>lambda>>tensor_s_size;
+        myin>>tensor_s_size;
     }
     
     template< typename T, size_t kth_order >

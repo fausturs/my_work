@@ -96,6 +96,7 @@ namespace wjy {
     {
         base_class::save_parameters(myout);
         for (auto & p : matrixes_size) myout<<p.first<<" "<<p.second<<" ";
+        myout<<std::endl;
     }
     
     template< typename T, size_t kth_order>

@@ -160,6 +160,7 @@ namespace wjy{
         assert(myout);
         myout<<parameters_num<<" "<<mini_batch_num<<" ";
         std::copy(parameters.begin(), parameters.end(), std::ostream_iterator<T>(myout, " "));
+        myout<<std::endl;
     }
     
     template < typename T, typename V >

@@ -35,13 +35,16 @@ double sgd_learning_rate = 0.001;
 double sgd_convergence_condition = 0.001;
 std::shared_ptr< wjy::trainer<double> > sgd = std::make_shared< wjy::SGD<double> >(sgd_iter_num, sgd_epoch_size, sgd_learning_rate, sgd_convergence_condition, sgd_random_seed);
 
+std::string train_tensor_path = "../data/20180415/tensor_dim3_80_20180415.txt";
+std::string test_tensor_path = "../data/20180415/tensor_dim3_20_20180415.txt";
+
 int main(int args, const char* argv[])
 {
     wjy::sparse_tensor<double ,3> tensor;
-    wjy::load_sparse_tensor(tensor, "../data/test_tensor_dim3_2.txt");
+    wjy::load_sparse_tensor(tensor, train_tensor_path);
 //    wjy::tucker_decomposition<double, 3> td(std::move(tensor), {10, 10, 10}, 0.5, 20);
 //    td.train(sgd, std::cout, distribution1);
-    wjy::canonical_decomposition<double, 3> cd(std::move(tensor), 10, 0.5, 20);
+    wjy::canonical_decomposition<double, 3> cd(std::move(tensor), 10, 0.5, 1000);
     cd.train(sgd, std::cout, distribution1);
 
     return 0;

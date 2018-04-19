@@ -8,7 +8,8 @@
 #include <list>
 #include <cassert>
 
-#include "MySQL.hpp"
+#include "sparse_tensor.hpp"
+
 
 std::unordered_map< std::string, size_t >   skill_to_id, company_to_id, position_to_id;
 std::vector< std::string >                  id_to_skill, id_to_company, id_to_position;
@@ -41,7 +42,7 @@ void create_tensor()
     std::string st_jd;
     while (std::getline(myin, st_jd))
     {
-        auto job_description = split(st_jd, {',','/'});
+        auto job_description = wjy::split(st_jd, {',','/'});
         int id = std::atoi( job_description[0].c_str() );
         std::pair<std::string, std::string> company_position;
 		if (jdid_company_position.find(id) == jdid_company_position.end()) continue;
@@ -71,22 +72,8 @@ void create_tensor()
 /*                      private functions&var for this file                             */
 /****************************************************************************************/
 
-wjy::MySQL sql("127.0.0.1", "wjy", "", "lagou_data");
+//wjy::MySQL sql("127.0.0.1", "wjy", "", "lagou_data");
 
-std::vector< std::string > split(const std::string& st, const std::unordered_set< char >& spliter)
-{
-    if (spliter.empty()) return {st};
-    size_t position=-1;
-    std::vector<std::string> ans;
-    for (size_t i = 0; i<st.size(); i++ )
-        if (spliter.find(st[i]) != spliter.end())
-        {
-            ans.push_back(st.substr(position+1, i-position-1));
-            position = i;
-        }
-    ans.push_back(st.substr(position+1));
-    return ans;
-}
 
 // it's a (something, something_id) pair list. something_id helps to build the tensor.
 void read_some_list(const std::string& path, std::unordered_map< std::string, size_t >& some_to_id, std::vector< std::string >& id_to_some)
@@ -141,7 +128,7 @@ void read_jdid_company_position(const std::string& path = "../data/raw_data/jdid
     std::string st;
     while(std::getline(myin, st))
 	{
-		auto sts = split(st, {'?'});
+		auto sts = wjy::split(st, {'?'});
 		int id = std::atoi(sts[0].c_str());
 		assert(id>0 && sts.size()==3);
 		jdid_company_position[id] = std::make_pair(sts[1], sts[2]);
@@ -208,7 +195,7 @@ void prepare_filter()
     std::string st_jd;
     while (std::getline(myin, st_jd))
     {
-        auto job_description = split(st_jd, {',','/'});
+        auto job_description = wjy::split(st_jd, {',','/'});
         for (auto & word : job_description)
             if (skill_to_id.find(word)!=skill_to_id.end()) skill_counter[word]++;
     }

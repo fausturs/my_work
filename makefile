@@ -18,10 +18,11 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 #							other lib setting								#
 #############################################################################
 # mysql setting
-MYSQL_INC_DIRS := /usr/include/mysql 
-MYSQL_LIB_DIRS := /usr/lib/mysql 
-INC_FLAGS += $(addprefix -I,$(MYSQL_INC_DIRS))
-LIB_FLAGS += $(addprefix -L,$(MYSQL_LIB_DIRS))
+#MYSQL_INC_DIRS := /usr/include/mysql 
+#MYSQL_LIB_DIRS := /usr/lib/mysql 
+#INC_FLAGS += $(addprefix -I,$(MYSQL_INC_DIRS))
+#LIB_FLAGS += $(addprefix -L,$(MYSQL_LIB_DIRS))
+#LIB_FLAGS += -lmysqlclient -lz -lm
 	
 #############################################################################
 #							c++ compiler setting							#
@@ -47,7 +48,7 @@ CPPFLAGS = -std=c++14 -O3 -MMD -MP $(INC_FLAGS)
 #								link setting								#
 #############################################################################
 LD = clang++
-LDFLAGS = $(LIB_FLAGS) -lmysqlclient -lz -lm
+LDFLAGS = $(LIB_FLAGS)
 
 
 #############################################################################

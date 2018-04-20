@@ -84,11 +84,11 @@ namespace wjy {
     template< typename T, size_t kth_order>
     void tensor_factorization_predictor<T, kth_order>::clear()
     {
+        base_class::clear();
         tensor_A.clear();
         for (auto & p : matrixes_size) p = {0, 0};
         batchs.clear();
         counter.clear();
-        base_class::clear();
     }
     
     template< typename T, size_t kth_order>

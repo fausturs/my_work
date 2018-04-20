@@ -10,6 +10,7 @@
 #include <array>
 #include <numeric>
 #include <algorithm>
+#include <cxxabi.h>
 
 namespace wjy {
     
@@ -81,6 +82,27 @@ namespace wjy {
         return a;
     }
     
+    
+    
+    template <class T> class Show_type{};
+    //想法是把要显示的类型作为T参数传递进函数
+    //为了避免typeid操作符吧const reference volatile三种修饰符去掉， 这里用了个空模板类把T包了一层
+    //这样typeid就没办法去掉尖括号里面的修饰符
+    //最后返回字符串的时候，记得把外面包的Show_type类型去掉就可以了
+    //调用方式就是    get_type_name< some_type >()
+    //或者是         get_type_name< decltype(some_value) >()
+    template <typename T>
+    std::string get_type_name()
+    {
+        int status = -1;
+        auto name = typeid(Show_type< T >).name();
+        char* clearName = abi::__cxa_demangle(name, NULL, NULL, &status);
+        const char* const demangledName = (status==0) ? clearName : name;
+        std::string ret_val(demangledName);
+        free(clearName);
+        ret_val = ret_val.substr(15, ret_val.size()-16);
+        return ret_val;
+    }
 }
 
 #endif

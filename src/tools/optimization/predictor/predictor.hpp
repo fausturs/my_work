@@ -51,6 +51,7 @@ namespace wjy{
         //  uncopiable, write nothing, compiler implicitly assume it's delete
         
         virtual T predict(const V&)const;
+        virtual T operator()(const V&) const;
 
         
         //  trainer, training data and other settings
@@ -103,6 +104,11 @@ namespace wjy{
     T predictor<T, V>::predict(const V& x) const
     {
         return _predict(parameters, x);
+    }
+    template < typename T, typename V >
+    T predictor<T, V>::operator()(const V& x) const
+    {
+        return predict(x);
     }
     
     template < typename T, typename V >

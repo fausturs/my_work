@@ -3,13 +3,16 @@
 
 #include <iostream>
 #include <iomanip>
+#include <set>
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <random>
 #include <array>
 #include <numeric>
 #include <algorithm>
+#include <functional>
 #include <cxxabi.h>
 
 namespace wjy {
@@ -83,14 +86,9 @@ namespace wjy {
     }
     
     
-    
+    //  use like get_type_name< some_type >()
+    //  or get_type_name< decltype(some_value) >()
     template <class T> class Show_type{};
-    //想法是把要显示的类型作为T参数传递进函数
-    //为了避免typeid操作符吧const reference volatile三种修饰符去掉， 这里用了个空模板类把T包了一层
-    //这样typeid就没办法去掉尖括号里面的修饰符
-    //最后返回字符串的时候，记得把外面包的Show_type类型去掉就可以了
-    //调用方式就是    get_type_name< some_type >()
-    //或者是         get_type_name< decltype(some_value) >()
     template <typename T>
     std::string get_type_name()
     {
@@ -103,6 +101,49 @@ namespace wjy {
         ret_val = ret_val.substr(15, ret_val.size()-16);
         return ret_val;
     }
+
+    //  knn
+    //  space complexity O(n), time complexity O(n^2logn)
+    template <typename T>
+    std::vector<size_t> knn(const std::vector<T>& data, size_t k, size_t category_num, std::function< double(const T&, const T&) > distance, size_t iterate_num=200, int random_seed=1)
+    {
+        size_t n = data.size();
+        std::vector<size_t> category(n, 0), new_category(n, 0);
+        std::set< std::pair< double, size_t>, std::greater<std::pair< double, size_t>> > all_distance;
+        //  initialize
+        size_t rd = (random_seed==-1)?std::random_device{}():random_seed;
+        std::mt19937 mt(rd);
+        std::uniform_int_distribution<size_t> uid(0, category_num-1);
+        for (auto & c : category) c = uid(mt);
+        //  iterate
+        double dis;
+        for (size_t iter=0; iter<iterate_num; iter++)
+        {
+            for (size_t i=0; i<n; i++)
+            {
+                all_distance.clear();
+                for (size_t j=0; j<n; j++)
+                {
+                    if (i!=j) dis = distance(data[i], data[j]);
+                    all_distance.insert( std::make_pair(dis, j) );
+                }
+                //  k nearest neighbor vote
+                std::vector<size_t> vote(category_num, 0);
+                auto it = all_distance.begin();
+                for (size_t j=0; it!=all_distance.end() && j<k; it++,j++)
+                    vote[ category[it->second] ]++;
+                new_category[i] = std::distance(vote.begin(), std::max_element(vote.begin(), vote.end()));
+            }
+            std::swap(category, new_category);
+        }
+        return category;
+    }
 }
+
+
+
+
+
+
 
 #endif

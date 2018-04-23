@@ -8,6 +8,8 @@
 #include <array>
 #include <unordered_map>
 #include <cassert>
+#include <algorithm>
+#include <functional>
 
 namespace wjy {
     
@@ -63,7 +65,52 @@ namespace wjy {
         }
         myin.close();
     }
+
+    template <class T, size_t kth_order>
+    std::vector< sparse_tensor<T, kth_order-1> > split_sparse_tensor(const sparse_tensor<T, kth_order>& t, size_t d)
+    {
+        size_t num = 0;
+        for (auto & entry : t) num = std::max(entry.first[d]+1, num);
+        std::vector< sparse_tensor<T, kth_order-1> > tensors(num);
+        for (auto & entry : t) 
+        {
+            auto & old_index = entry.first;
+            sparse_tensor_index<kth_order-1> new_index;
+            size_t j = 0;
+            for (size_t i=0; i<kth_order; i++) 
+                if (i!=d) new_index[j++] = old_index[i];
+            tensors[ old_index[d] ].emplace( new_index, entry.second );
+        }
+        return tensors;
+    }
+
+    template <class T, size_t kth_order>
+    sparse_tensor<T, kth_order-1> flatten_sparse_tensor(const sparse_tensor<T, kth_order>& t, size_t d)
+    {
+        sparse_tensor<T, kth_order-1> ans;
+        for (auto & entry : t) 
+        {
+            auto & old_index = entry.first;
+            sparse_tensor_index<kth_order-1> new_index;
+            size_t j = 0;
+            for (size_t i=0; i<kth_order; i++) 
+                if (i!=d) new_index[j++] = old_index[i];
+            ans[ new_index ] += entry.second;
+        }
+        return ans;
+    }
     
+    template <class T, size_t kth_order> 
+    std::array<size_t, kth_order> dims_of_sparse_tensor(const sparse_tensor<T, kth_order>& t)
+    {
+        std::array<size_t, kth_order> dims = {0};
+        for (auto & entry : t)
+        {
+            auto & index = entry.first;
+            for (size_t i=0; i<kth_order; i++) dims[i] = std::max(index[i]+1, dims[i]);
+        }
+        return dims;
+    }
 }
 
 #endif

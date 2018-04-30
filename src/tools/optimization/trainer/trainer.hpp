@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cassert>
 
+#include "linear_algebra_functions.hpp"
 #include "tools.hpp"
 #include "Timer.hpp"
 
@@ -80,8 +81,10 @@ namespace wjy {
     template< typename T>
     void trainer<T>::update_parameters( const std::vector<T> &g, T ratio)
     {
-        for (size_t i=0; i<parameters.size(); i++)
-            parameters[i] += g[i]*ratio;
+        //  para = para*1 + g*ratio;
+        vector_sum(parameters.begin(), static_cast<T>(1), g.begin(), ratio, g.size(), parameters.begin());
+        // for (size_t i=0; i<parameters.size(); i++)
+            // parameters[i] += g[i]*ratio;
     }
     
     template< typename T>

@@ -23,12 +23,78 @@ void read_all(wjy::Date data_date);
 void create_tensor();
 
 
+template <typename T, size_t kth_order>
+std::vector< size_t > k_means_for_tensors(const std::vector< wjy::sparse_tensor<T, kth_order> >& tensors, size_t k, size_t iterate_num)
+{
+    //  init
+    size_t n = tensors.size();
+    std::vector< wjy::sparse_tensor<T, kth_order> > centers(k);
+    std::vector< size_t > centers_size(k, 0), category(n);
+    for (size_t i=0; i<n; i++) category[i] = i%k;   
+    //  distance of two tensors
+    std::vector<T> norm(n, 0);
+    for (size_t i=0; i<n; i++)
+    {
+        auto & tensor = tensors[i];
+        for (auto & entry : tensor) norm[i] += entry.second*entry.second;
+        norm[i] = std::sqrt(norm[i]);
+    }
+    using V = const wjy::sparse_tensor<T, kth_order> &;
+    auto distance = [](V x, V y, T norm_x, T norm_y){
+        T dis = 0;
+        //  assume x.size()<y.size();
+        for (auto & entry : x)
+            if (y.count(entry.first)!=0) dis += entry.second * y.at(entry.first);
+        // return dis/(norm_x*norm_y);
+        return std::sqrt(norm_x*norm_x + norm_y*norm_y - 2*dis);
+    };
+    // return category;
+    //  iterate
+    for (size_t iter=0; iter<iterate_num; iter++)
+    {
+        std::cout<<"iterate : "<<iter<<std::endl;
+        //  calculate new centers
+        for (auto & center : centers) center.clear();
+        centers_size = std::vector<size_t>(k, 0);
+        for (size_t i=0; i<n; i++)
+        {
+            auto & center = centers[ category[i] ];
+            centers_size[ category[i] ]++;
+            for (auto & entry : tensors[i]) center[ entry.first ] += entry.second;
+        }
+        std::vector<T> centers_norm(k, 0);
+        for (size_t i=0; i<k ;i++)
+        {
+            for (auto & entry : centers[i])
+            {
+                entry.second /= static_cast<T>(centers_size[i]);
+                centers_norm[i] += entry.second*entry.second;
+            }
+            centers_norm[i] = std::sqrt(centers_norm[i]);
+        }
+        //  update nearest center
+        for (size_t i=0; i<n; i++)
+        {
+            T dis = -1;
+            for (size_t j=0; j<k; j++)
+            {
+                T new_dis = distance(tensors[i], centers[j], norm[i], centers_norm[j]);
+                if (dis == -1 || new_dis < dis) 
+                {
+                    category[i] = j;
+                    dis = new_dis;
+                }
+            }
+        }
+    }
+    return category;
+}
 
 
 
 //          evaluation functions
 template <typename D, typename T, typename V>
-T mean_square_error(const D& d,const wjy::predictor<T, V >& predictor)
+T mean_square_error(const D& d, const wjy::predictor<T, V >& predictor)
 {
     T MSE = 0;
     for (auto & entry : d)
@@ -73,7 +139,7 @@ T r_square(const D& d, const wjy::predictor<T, V>& predictor)
 }
 
 template <typename D, typename T, typename V>
-std::vector< std::pair<std::string, T> > all_evaluations(const D& d,const wjy::predictor<T, V >& predictor)
+std::vector< std::pair<std::string, T> > all_evaluations(const D& d, const wjy::predictor<T, V >& predictor)
 {
     std::vector< std::pair<std::string, T> > ans;
     ans.emplace_back("MSE", mean_square_error(d, predictor));

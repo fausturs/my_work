@@ -15,8 +15,9 @@
 namespace wjy {
     //  \min \|A - s \times p_1 \times ... \times p_{k}\|_F + \lambda(\sum_i \|p_i\|_F + \|s\|_F)
     template< typename T, size_t kth_order >
-    class tucker_decomposition final: public tensor_factorization_predictor<T, kth_order >{
+    class tucker_decomposition: public tensor_factorization_predictor<T, kth_order >{
         using base_class = tensor_factorization_predictor<T, kth_order >;
+    protected:
         using base_class::tensor_A;
         using base_class::matrixes_size;
         using base_class::batchs;

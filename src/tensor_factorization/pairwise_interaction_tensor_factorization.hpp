@@ -11,8 +11,9 @@ namespace wjy {
     //  only need update the value parameters_num
     
     template < typename T, size_t kth_order >
-    class pairwise_interaction_tensor_factorization final : public tensor_factorization_predictor<T, kth_order >{
+    class pairwise_interaction_tensor_factorization : public tensor_factorization_predictor<T, kth_order >{
         using base_class = tensor_factorization_predictor<T, kth_order >;
+    protected:
         using base_class::tensor_A;
         using base_class::matrixes_size;
         using base_class::batchs;
@@ -77,9 +78,6 @@ namespace wjy {
                 {
                     size_t offset_ij = offset[i] + matrixes_size[i].first*vector_length*(j-1) + index[i]*vector_length;
                     size_t offset_ji = offset[j] + matrixes_size[j].first*vector_length*(i  ) + index[j]*vector_length;
-//                    std::cout<<"i:"<<i<<" j:"<<j<<" index[i]:"<<index[i]<<" index[j]:"<<index[j]<<std::endl;
-//                    std::cout<<"offset_ij:"<<offset_ij<<" offset_ji:"<<offset_ji<<std::endl;
-//                    exit(0);
                     auto it_para_ij = para.begin() + offset_ij;
                     auto it_para_ji = para.begin() + offset_ji;
                     auto it_g_ij = g.begin() + offset_ij;
@@ -89,9 +87,6 @@ namespace wjy {
                     vector_sum(it_g_ji, it_g_ji+vector_length, it_para_ij, temp*weights[w_i]);
                 }
         }
-        //std::cout<<"g   ";
-        //for (auto g_i : g) std::cout<<g_i<<" ";
-        //std::cout<<std::endl;
         return g;
     }
     template < typename T, size_t kth_order >
@@ -214,7 +209,7 @@ namespace wjy {
     void pairwise_interaction_tensor_factorization<T, kth_order>::load_parameters(std::istream& myin)
     {
         base_class::load_parameters(myin);
-        std::copy_n(std::istream_iterator<T>(myin), kth_order*(kth_order-1), weights.begin());
+        std::copy_n(std::istream_iterator<T>(myin), kth_order*(kth_order-1)/2, weights.begin());
     }
     template < typename T, size_t kth_order >
     void pairwise_interaction_tensor_factorization<T, kth_order>::test()

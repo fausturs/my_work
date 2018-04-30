@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <queue>
 #include <random>
 #include <array>
 #include <numeric>
@@ -29,13 +30,6 @@ namespace wjy {
     {
         myout<<std::left<<std::setw(w)<<first;
         format_print<w>(myout, args...);
-    }
-    // vector sum
-    template <class Input_it1, class Input_it2, class T>
-    void vector_sum(Input_it1 first1, Input_it1 last1, Input_it2 first2, T ratio = 1)
-    {
-        for (;first1!=last1;first1++,first2++)
-            *first1 += (*first2)*ratio;
     }
 
     template <class T>
@@ -102,42 +96,61 @@ namespace wjy {
         return ret_val;
     }
 
-    //  knn
-    //  space complexity O(n), time complexity O(n^2logn)
     template <typename T>
-    std::vector<size_t> knn(const std::vector<T>& data, size_t k, size_t category_num, std::function< double(const T&, const T&) > distance, size_t iterate_num=200, int random_seed=1)
+    std::vector< std::vector< std::pair<double, size_t> > > k_nearest_neighbours(const std::vector<T>& data, size_t k, std::function< double(const T&, const T&) > distance)
     {
+        using neighbour_tp          = std::pair<double, size_t>;
+        using priority_queue_tp     = std::priority_queue<neighbour_tp>;
         size_t n = data.size();
-        std::vector<size_t> category(n, 0), new_category(n, 0);
-        std::set< std::pair< double, size_t>, std::greater<std::pair< double, size_t>> > all_distance;
-        //  initialize
-        size_t rd = (random_seed==-1)?std::random_device{}():random_seed;
-        std::mt19937 mt(rd);
-        std::uniform_int_distribution<size_t> uid(0, category_num-1);
-        for (auto & c : category) c = uid(mt);
-        //  iterate
-        double dis;
-        for (size_t iter=0; iter<iterate_num; iter++)
-        {
-            for (size_t i=0; i<n; i++)
+        std::vector< priority_queue_tp > knn(n);
+        for (size_t i=0; i<n; i++)
+            for (size_t j=i+1; j<n; j++)
             {
-                all_distance.clear();
-                for (size_t j=0; j<n; j++)
-                {
-                    if (i!=j) dis = distance(data[i], data[j]);
-                    all_distance.insert( std::make_pair(dis, j) );
-                }
-                //  k nearest neighbor vote
-                std::vector<size_t> vote(category_num, 0);
-                auto it = all_distance.begin();
-                for (size_t j=0; it!=all_distance.end() && j<k; it++,j++)
-                    vote[ category[it->second] ]++;
-                new_category[i] = std::distance(vote.begin(), std::max_element(vote.begin(), vote.end()));
+                double dis = distance( data[i], data[j]);
+                knn[i].emplace(dis, j);
+                knn[j].emplace(dis, i);
+                if (knn[i].size()>k) knn[i].pop();
+                if (knn[j].size()>k) knn[j].pop();
             }
-            std::swap(category, new_category);
+        std::vector< std::vector<neighbour_tp> > ans(n);
+        for (size_t i=0; i<n; i++)
+        {
+            ans[i].resize( knn[i].size() );
+            for (auto & neighbour : ans[i])
+            {
+                neighbour = knn[i].top();
+                knn[i].pop();
+            }
         }
-        return category;
+        return ans;
     }
+
+    // template <typename T>
+    // std::vector<size_t> knn_cluster(const std::vector<T>& data, size_t k, std::function< double(const T&, const T&) > distance, size_t category_num, size_t iter_num, int random_seed=1)
+    // {
+    //     size_t n = data.size();
+    //     std::vector<size_t> category(n, 0), new_category(n, 0);
+    //     //  initialize
+    //     size_t rd = (random_seed==-1)?std::random_device{}():random_seed;
+    //     std::mt19937 mt(rd);
+    //     std::uniform_int_distribution<size_t> uid(0, category_num-1);
+    //     for (auto & c : category) c = uid(mt);
+    //     auto knn = k_nearest_neighbours(data, k, distance);
+    //     //  iterate
+    //     for (size_t iter=0; iter<iterate_num; iter++)
+    //     {
+    //         for (size_t i=0; i<n; i++)
+    //         {
+    //             //  k nearest neighbor vote
+    //             std::vector<size_t> vote(category_num, 0);
+    //             for (auto & p : knn[i]) vote[ category[p.second] ]++;
+    //             new_category[i] = std::distance(vote.begin(), std::max_element(vote.begin(), vote.end()));
+    //         }
+    //         std::swap(category, new_category);
+    //     }
+    //     return category;
+    // }
+
 }
 
 

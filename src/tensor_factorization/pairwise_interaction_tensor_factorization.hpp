@@ -3,6 +3,8 @@
 
 //  PITF (Steffen Rendle and Lars Schmidt-Thieme. 2010)
 #include "tensor_factorization_predictor.hpp"
+#include <cmath>
+#include <iostream>
 
 namespace wjy {
     //  let P^{i,j} denote a matrix parameter.
@@ -135,6 +137,7 @@ namespace wjy {
         T l = 0;
         //  all of the F-norm
         l = lambda * std::inner_product(para.begin(), para.end(), para.begin(), l);
+        if (!isfinite(l)) {std::clog<<"PITF ERORR! 11111"<<std::endl;exit(0);}
         //  square error
         for (auto & entry : tensor_A)
         {
@@ -142,6 +145,7 @@ namespace wjy {
             auto & value = entry.second;
             auto pred = _predict(para, index);
             l += (pred - value)*(pred - value);
+            if (!isfinite(l)) {std::clog<<"PITF ERORR! 22222 "<<index[0]<<" "<<index[1]<<" "<<index[2]<<" "<<pred<<std::endl;exit(0);}
         }
         return l;
     }

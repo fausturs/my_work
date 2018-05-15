@@ -93,7 +93,7 @@ namespace wjy{
         my_trainer->mini_batch_stochastic_gradient = std::bind(std::mem_fn(&predictor<T, V>::mini_batch_stochastic_gradient), this, _1, _2);
         my_trainer->proximal = std::bind(std::mem_fn(&predictor<T, V>::proximal), this, _1);
         
-        my_trainer->init_parameters(parameters);
+        // my_trainer->init_parameters(parameters);
     }
     
     template < typename T, typename V >

@@ -3,7 +3,9 @@
 
 #include "pairwise_interaction_tensor_factorization.hpp"
 
+#include <iostream>
 #include <algorithm>
+#include <cmath>
 
 namespace wjy{
 
@@ -78,6 +80,7 @@ namespace wjy{
     T my_model_2<T, kth_order>::loss(const std::vector<T>& para) const
     {
         T l = base_class::loss(para);
+        if (!isfinite(l)) {std::clog<<"PITF ERORR!"<<std::endl;exit(0);}
         std::vector<T> temp(parameters_num);
         size_t n = old_parameters.size();
         for (size_t i=0; i<n; i++)
@@ -85,7 +88,9 @@ namespace wjy{
             //
             vector_sum(para.begin(), static_cast<T>(2), old_parameters[i].begin(), static_cast<T>(-2), parameters_num, temp.begin());
             T l_i = lambda_2 * std::inner_product(temp.begin(), temp.end(), temp.begin(), static_cast<T>(0));
+            if (!isfinite(l_i)) {std::clog<<"l_i ERORR!"<<std::endl;exit(0);}
             l_i /= n-i;
+            if (!isfinite(l_i)) {std::clog<<"l_i / n-i EROOR! "<<n-i<<std::endl;exit(0);}
             l += l_i;
         }
         return l;

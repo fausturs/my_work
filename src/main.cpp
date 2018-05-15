@@ -56,17 +56,17 @@ int main(int args, const char* argv[])
     auto train_tensors = wjy::split_sparse_tensor(train_tensor, 3);
     std::vector< std::vector<double> > old_parameters;
 
-    std::string file_path = "../model/20180515_1_";
-    //  2013-2015 3 years
+    std::string file_path = "../model/20180515_2_";
+    std::vector<int> mini_batch_nums = {50, 500, 1000};
     int n = 3;
+    //  2013-2015 3 years
     for (int i=0; i<n; i++)
     {
-        wjy::my_model_2<double, 3> mm2(std::move(train_tensors[i]), 10, 0.5, 1000, old_parameters, 0.1);
+        wjy::my_model_2<double, 3> mm2(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], old_parameters, 0.1);
         mm2.train(sgd, std::cout, distribution1);
         mm2.train(gd, std::cout);
         old_parameters.push_back( std::move(mm2.get_parameters()) );
         mm2.save(file_path + std::to_string(i+2013)+".mod");
-        break;
     }
 
     return 0;

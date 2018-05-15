@@ -64,8 +64,8 @@ namespace wjy{
         virtual void clear();
         virtual void save_parameters(std::ostream&) const;
         virtual void load_parameters(std::istream&);
-        virtual void save_parameters(const std::string&) const;
-        virtual void load_parameters(const std::string&);
+        virtual void save(const std::string&) const;
+        virtual void load(const std::string&);
         virtual void test();
         
         virtual ~predictor() = default;
@@ -181,7 +181,7 @@ namespace wjy{
     }
 
     template < typename T, typename V >
-    void predictor<T, V>::save_parameters(const std::string& path) const
+    void predictor<T, V>::save(const std::string& path) const
     {
         std::ofstream myout(path);
         assert(myout);
@@ -190,7 +190,7 @@ namespace wjy{
     }
     
     template < typename T, typename V >
-    void predictor<T, V>::load_parameters(const std::string& path)
+    void predictor<T, V>::load(const std::string& path)
     {
         std::ifstream myin(path);
         assert(myin);

@@ -26,10 +26,8 @@ namespace wjy{
         std::vector<T> gradient_of_old_parameters(const std::vector<T>&) const;
     public:
         my_model_2() = default;
-        //  all vector in this model is the same length, so parameters_rank is a scalar.
-        //  weights default = 1
+
         my_model_2(sparse_tensor<T, kth_order>&& tensor_A, size_t parameters_rank, T lambda,  size_t mini_batch_num, std::vector< std::vector<T> > old_parameters, T lambda_2);
-        //  init weights by a given array
         my_model_2(sparse_tensor<T, kth_order>&& tensor_A, size_t parameters_rank, T lambda,  const std::array<T, kth_order*(kth_order-1)/2>& weights ,size_t mini_batch_num, std::vector< std::vector<T> > old_parameters, T lambda_2);
             
         //  movable

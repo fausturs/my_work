@@ -10,7 +10,8 @@ namespace wjy{
     //  classify the first order of tensor to several group, assume in each group they are similar.
 
     template<typename T, size_t kth_order>
-    class my_model_1 final: public pairwise_interaction_tensor_factorization<T, kth_order>{
+    class my_model_1 : public pairwise_interaction_tensor_factorization<T, kth_order>{
+    protected:
     	using base_class = pairwise_interaction_tensor_factorization<T, kth_order >;
         using base_class::tensor_A;
         using base_class::matrixes_size;

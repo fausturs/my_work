@@ -16,6 +16,8 @@
 #include "pairwise_interaction_tensor_factorization.hpp"
 
 #include "my_model_1.hpp"
+#include "my_model_2.hpp"
+#include "my_model_3.hpp"
 
 #include "func.hpp"
 
@@ -56,8 +58,8 @@ std::string negative_tensor_path    = "../data/20180415/tensor_dim3_negative_201
 std::string company_category_path   = "../data/20180415/category_of_company_80_20180415.txt";
 int main(int args, const char* argv[])
 {
-    wjy::sparse_tensor<double ,3> train_tensor, test_tensor, negative_tensor;
-    wjy::load_sparse_tensor(train_tensor, train_tensor_path);
+    // wjy::sparse_tensor<double ,3> train_tensor, test_tensor, negative_tensor;
+    // wjy::load_sparse_tensor(train_tensor, train_tensor_path);
     // wjy::load_sparse_tensor(test_tensor, test_tensor_path);
     // wjy::load_sparse_tensor(negative_tensor, negative_tensor_path);
 
@@ -75,22 +77,24 @@ int main(int args, const char* argv[])
     // pitf.train(sgd, std::cout, distribution1);
     // pitf.train(gd, std::cout);
 
-    std::ifstream myin(company_category_path);
-    size_t n = 0; 
-    myin>>n;
-    std::vector<size_t> category_map(n);
-    for(auto & c : category_map) myin>>c;
-    myin.close();
+    // std::ifstream myin(company_category_path);
+    // size_t n = 0; 
+    // myin>>n;
+    // std::vector<size_t> category_map(n);
+    // for(auto & c : category_map) myin>>c;
+    // myin.close();
 
-    wjy::my_model_1<double, 3> mm1(std::move(train_tensor), 10, 0.5, category_map, 0.1, 1000);
+    // wjy::my_model_1<double, 3> mm1(std::move(train_tensor), 10, 0.5, category_map, 0.1, 1000);
 
-    mm1.train(sgd, std::cout, distribution1);
-    mm1.train(gd, std::cout);
+    // mm1.train(sgd, std::cout, distribution1);
+    // mm1.train(gd, std::cout);
 
-    myout.open("../model/20180430_1.mod");
-    mm1.save_parameters(myout);
-    myout.close();
+    // myout.open("../model/20180430_1.mod");
+    // mm1.save_parameters(myout);
+    // myout.close();
     
+    wjy::my_model_3<double, 3> mm3;
+
     return 0;
 }
 

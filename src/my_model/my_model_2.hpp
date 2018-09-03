@@ -80,7 +80,7 @@ namespace wjy{
     T my_model_2<T, kth_order>::loss(const std::vector<T>& para) const
     {
         T l = base_class::loss(para);
-        if (!std::isfinite(l)) {std::clog<<"PITF ERORR!"<<std::endl;exit(0);}
+        
         std::vector<T> temp(parameters_num, 0);
         size_t n = old_parameters.size();
         for (size_t i=0; i<n; i++)
@@ -88,19 +88,9 @@ namespace wjy{
             //
             vector_sum(para.begin(), static_cast<T>(2), old_parameters[i].begin(), static_cast<T>(-2), parameters_num, temp.begin());
             T l_i = lambda_2 * std::inner_product(temp.begin(), temp.end(), temp.begin(), static_cast<T>(0));
-            if (!std::isfinite(l_i)) {
-                std::clog<<i<<std::endl;
-                std::clog<<para.size()<<std::endl;
-                std::clog<<"para: "<<para[0]<<" "<<para[1]<<" "<<para[2]<<" "<<para[3]<<std::endl;
-                const auto & oldp = old_parameters[i];
-                std::clog<<oldp.size()<<std::endl;
-                std::clog<<"old_parameters[i]: "<<oldp[0]<<" "<<oldp[1]<<" "<<oldp[2]<<" "<<oldp[3]<<std::endl;
-                std::clog<<temp.size()<<std::endl;
-                std::clog<<"temp: "<<oldp[0]<<" "<<temp[1]<<" "<<temp[2]<<" "<<temp[3]<<std::endl;
-                exit(0);
-            }
+            
             l_i /= n-i;
-            if (!std::isfinite(l_i)) {std::clog<<"l_i / n-i EROOR! "<<n-i<<std::endl;exit(0);}
+            
             l += l_i;
         }
         return l;

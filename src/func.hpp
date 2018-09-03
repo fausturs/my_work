@@ -148,6 +148,80 @@ std::vector< std::pair<std::string, T> > all_evaluations(const D& d, const wjy::
     return ans;
 }
 
+template <typename D, typename T, typename V>
+T mean_square_error_1(const std::vector<D>& d, const std::vector<wjy::predictor<T, V >*> predictor)
+{
+    T MSE = 0;
+    double num = 0;
+    for (int i=0; i<d.size(); i++)
+    {
+        num += d[i].size();
+        for (auto & entry : d[i])
+        {
+            auto & index = entry.first;
+            auto & value = entry.second;
+            T temp = (value - predictor[i]->operator()( index ));
+            MSE += temp*temp;
+        }
+    }
+    return MSE / num;
+}
+
+
+
+template <typename D, typename T, typename V>
+T mean_absolute_percentage_error_1(const std::vector<D>& d, const std::vector<wjy::predictor<T, V >*> predictor)
+{
+    T MAPE = 0;
+    double num = 0;
+    for (int i=0; i<d.size(); i++)
+    {
+        num+=d[i].size();
+        for (auto & entry : d[i])
+        {
+            auto & index = entry.first;
+            auto & value = entry.second;
+            T temp = std::abs( (value - predictor[i]->operator()( index ))/value );
+            MAPE += temp;
+        }
+    }
+    return MAPE * 100 / num;
+}
+
+template <typename D, typename T, typename V>
+T r_square_1(const std::vector<D>& d, const std::vector<wjy::predictor<T, V >*> predictor)
+{
+    T rs = 0, mean = 0, ss_tot = 0, ss_res = 0;
+    double num = 0;
+    for (int i=0; i<d.size(); i++)
+    {
+        num+=d[i].size();
+        for (auto & entry : d[i])
+        {
+            auto & index = entry.first;
+            auto & value = entry.second;
+            mean += value;
+            T temp = (value -predictor[i]->operator()( index ));
+            ss_res += temp*temp;
+        }
+    }
+    mean /= num;
+    for (int i=0; i<d.size(); i++)
+        for (auto & entry : d[i]) 
+            ss_tot += (entry.second - mean)*(entry.second - mean);
+    return 1-(ss_res/ss_tot);
+}
+
+template <typename D, typename T, typename V>
+std::vector< std::pair<std::string, T> > all_evaluations_1(const std::vector<D>& d, const std::vector<wjy::predictor<T, V >*>& predictor)
+{
+    std::vector< std::pair<std::string, T> > ans;
+    ans.emplace_back("MSE", mean_square_error_1(d, predictor));
+    ans.emplace_back("MAPE", mean_absolute_percentage_error_1(d, predictor));
+    ans.emplace_back("R-Square", r_square_1(d, predictor));
+    return ans;
+}
+
 //  generate negative entries
 template<typename T>
 wjy::sparse_tensor<T, 3> generate_negative_entries(const wjy::sparse_tensor<T, 3>& t, int n = 5)

@@ -170,6 +170,9 @@ namespace wjy {
                 auto it2 = para.begin() + offset[j] + matrixes_size[j].first*vector_length*(i  ) + index[j]*vector_length;
                 pred += weights[w_i] * std::inner_product(it1, it1+vector_length, it2, static_cast<T>(0));
             }
+
+        if (pred<0) pred = 0;
+        if (pred>5) pred = 5;
         return pred;
     }
     

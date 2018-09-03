@@ -34,7 +34,9 @@ void save_new_data(const wjy::sparse_tensor<double, 4> t);
 void create_tensor()
 {
     read_raw_data();
+    std::clog<<"read raw data finish!"<<std::endl;
     prepare_filter();
+    std::clog<<"prepare filter finish!"<<std::endl<<"create tensor now"<<std::endl;
     
     std::ifstream myin("../data/raw_data/position_cut.txt");
     assert(myin);
@@ -49,6 +51,7 @@ void create_tensor()
 		if (jdid_company_position.find(id) == jdid_company_position.end()) continue;
 		company_position = jdid_company_position[id]; 
         int year = jdid_posttime[id] - 2013;// start in 2013
+        if (year >4 || year<0) continue; //to 2017
         index[3] = year;
         // these two keys must in the map.
         index[0] = company_to_id[company_position.first];
@@ -65,6 +68,7 @@ void create_tensor()
     }
 	myin.close();
     //
+    std::clog<<"saving now"<<std::endl;
     save_new_data(tensor);
 }
 
@@ -132,8 +136,11 @@ void read_jdid_company_position(const std::string& path = "../data/raw_data/jdid
     while(std::getline(myin, st))
 	{
 		auto sts = wjy::split(st, {'?'});
+        //if (sts.size()!=3) std::clog<<sts[0]<<std::endl;
 		int id = std::atoi(sts[0].c_str());
-		assert(id>0 && sts.size()==3);
+        //if (id<=0) std::clog<<st<<std::endl;
+		//assert(id>0 && sts.size()==3);
+        if (sts.size()!=3 || id<=0) continue;
 		jdid_company_position[id] = std::make_pair(sts[1], sts[2]);
 	}
 	myin.close();
@@ -148,8 +155,11 @@ void read_jdid_posttime(const std::string& path = "../data/raw_data/jdid_posttim
     while(std::getline(myin, st))
     {
         auto sts = wjy::split(st, {','});
+        //if (sts.size()!=2) std::clog<<sts[0]<<std::endl;
         int id = std::atoi(sts[0].c_str());
-        assert(id>0 && sts.size()==2);
+        //if (id<=0) std::clog<<st<<std::endl;
+        //assert(id>0 && sts.size()==2);
+        if (sts.size()!=2 || id<=0)  continue;
         jdid_posttime[id] = std::atoi( sts[1].substr(0, 4).c_str() );
     }
     myin.close();
@@ -187,7 +197,7 @@ std::list< std::pair<std::string, int> > parse_jd_demand(const std::vector< std:
         auto skill = skill_list.find(jd[i]);
         if (skill == skill_list.end() || skills.find(skill->first)!=skills.end()) continue;
         if (j>i) // two skills may have the same level of demand
-            for (j=i-1; j>0; j--)
+            for (j=i-1; j>0; j--)   //jd[0] is jdid, so here j in [1, i-1]
 			{
                 if (demand_level.find(jd[j]) != demand_level.end()) break;
 			}

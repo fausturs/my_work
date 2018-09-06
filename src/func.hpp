@@ -260,6 +260,9 @@ wjy::sparse_tensor<T, 3> generate_negative_entries(const wjy::sparse_tensor<T, 3
     return negative_tensor;
 }
 
+void print_top_k(const wjy::sparse_tensor<double, 4>& tensor, int k);
+
+
 //for test
 void test();
 

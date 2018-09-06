@@ -45,7 +45,7 @@ double sgd_learning_rate = 0.001;
 double sgd_convergence_condition = 0.001;
 std::shared_ptr< wjy::trainer<double> > sgd = std::make_shared< wjy::SGD<double> >(sgd_iter_num, sgd_epoch_size, sgd_learning_rate, sgd_convergence_condition, sgd_random_seed);
 
-
+std::string tensor_path             = "../data/20180713/tensor_dim4_20180713.txt";
 std::string train_tensor_path       = "../data/20180713/tensor_dim4_80_20180713.txt";
 std::string test_tensor_path        = "../data/20180713/tensor_dim4_20_20180713.txt";
 std::string company_category_path   = "../data/20180713/category_of_company_80_20180713.txt";
@@ -53,23 +53,27 @@ std::string company_category_path   = "../data/20180713/category_of_company_80_2
 int main(int args, const char* argv[])
 {
 
-    wjy::sparse_tensor<double ,4> train_tensor, test_tensor;
-    wjy::load_sparse_tensor(train_tensor, train_tensor_path);
-    wjy::load_sparse_tensor(test_tensor, test_tensor_path);
+    wjy::sparse_tensor<double ,4> train_tensor, test_tensor, tensor;
+    wjy::load_sparse_tensor(tensor, tensor_path);
+    // wjy::load_sparse_tensor(train_tensor, train_tensor_path);
+    // wjy::load_sparse_tensor(test_tensor, test_tensor_path);
 
-    std::string file_path = "../model/20180821";
+
+    // std::string file_path = "../model/20180821";
     
-    wjy::pairwise_interaction_tensor_factorization<double, 4> pred(std::move(train_tensor), 10, 0.5, 2000);
+    // wjy::pairwise_interaction_tensor_factorization<double, 4> pred(std::move(train_tensor), 10, 0.5, 2000);
 
-    pred.train(sgd, std::cout, distribution1);
-    pred.save(file_path + "_1.mod");
-    auto ae = all_evaluations(test_tensor, pred);
-    for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
+    // pred.train(sgd, std::cout, distribution1);
+    // pred.save(file_path + "_1.mod");
+    // auto ae = all_evaluations(test_tensor, pred);
+    // for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
 
-    pred.train(gd, std::cout);
-    pred.save(file_path + "_2.mod");
-    ae = all_evaluations(test_tensor, pred);
-    for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
+    // pred.train(gd, std::cout);
+    // pred.save(file_path + "_2.mod");
+    // ae = all_evaluations(test_tensor, pred);
+    // for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
+
+    print_top_k(tensor, 20);
 
     return 0;
 }

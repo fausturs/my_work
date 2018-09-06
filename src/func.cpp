@@ -86,6 +86,7 @@ void create_tensor()
 void read_some_list(const std::string& path, std::unordered_map< std::string, size_t >& some_to_id, std::vector< std::string >& id_to_some)
 {
     std::ifstream myin(path);
+    // std::cout<<path<<"\n";
     assert(myin);
     some_to_id.clear();
     id_to_some.clear();
@@ -178,9 +179,9 @@ void read_raw_data()
 void read_all(wjy::Date data_date)
 {
     auto date = data_date.to_string("");
-    read_skill_list("../data/skill_list_"+date+".txt");
-    read_company_list("../data/company_list_"+date+".txt");
-    read_position_list("../data/position_list_"+date+".txt");
+    read_skill_list("../data/"+date+"/skill_list_"+date+".txt");
+    read_company_list("../data/"+date+"/company_list_"+date+".txt");
+    read_position_list("../data/"+date+"/position_list_"+date+".txt");
 //    read_demand_level();
 //    read_jdid_company_position();
 }
@@ -291,6 +292,38 @@ std::pair< std::string, std::string > get_company_position(int id)
 }
 */
 
+
+void print_top_k(const wjy::sparse_tensor<double, 4>& tensor, int k)
+{
+    wjy::Date date(2018, 07, 13);
+    read_all(date);
+
+    auto  tensors = wjy::split_sparse_tensor(tensor, 3);
+    for (int i=0; i<5; i++)
+    {
+        std::unordered_map< std::string , int > company_counter, position_counter;
+
+        auto t = wjy::flatten_sparse_tensor(tensors[i], 2);
+        for (auto & entry : t)
+        {
+            auto & index = entry.first;
+            auto company = id_to_company[index[0]];
+            auto position = id_to_position[index[1]];
+            company_counter[company] += 1;
+            position_counter[position] += 1;
+        }
+
+        auto & c = company_counter;
+
+        std::vector< std::pair<std::string, int> > v(c.begin(), c.end());
+
+        std::sort(v.begin(), v.end(), [](auto&x, auto&y){return x.second > y.second;});
+        v.resize(k);
+        std::cout<<2013+i<<std::endl;
+        for (auto & p : v)
+            std::cout<<p.first<<" "<<p.second<<std::endl;
+    }
+}
 
 //for test
 void test()

@@ -18,6 +18,7 @@
 #include "my_model_1.hpp"
 #include "my_model_2.hpp"
 #include "my_model_3.hpp"
+#include "my_model_4.hpp"
 
 #include "func.hpp"
 
@@ -54,11 +55,11 @@ int main(int args, const char* argv[])
 {
 
     wjy::sparse_tensor<double ,4> train_tensor, test_tensor, tensor;
-    wjy::load_sparse_tensor(tensor, tensor_path);
-    // wjy::load_sparse_tensor(train_tensor, train_tensor_path);
-    // wjy::load_sparse_tensor(test_tensor, test_tensor_path);
+    // wjy::load_sparse_tensor(tensor, tensor_path);
+    wjy::load_sparse_tensor(train_tensor, train_tensor_path);
+    wjy::load_sparse_tensor(test_tensor, test_tensor_path);
 
-
+    auto train_tensors = wjy::split_sparse_tensor(train_tensor, 3);
     // std::string file_path = "../model/20180821";
     
     // wjy::pairwise_interaction_tensor_factorization<double, 4> pred(std::move(train_tensor), 10, 0.5, 2000);
@@ -73,7 +74,9 @@ int main(int args, const char* argv[])
     // ae = all_evaluations(test_tensor, pred);
     // for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
 
-    print_top_k(tensor, 20);
+    // print_top_k(tensor, 20);
+
+    wjy::my_model_4< double, 3 > my_model(std::move(train_tensors[0]), 10, 0.5, 2000, 0.5, {}, 1, {}, 1, {});
 
     return 0;
 }

@@ -3,6 +3,7 @@
 #include <utility>
 #include <random>
 #include <functional>
+#include <map>
 
 #include "trainer.hpp"
 #include "GD.hpp"
@@ -50,6 +51,26 @@ std::string tensor_path             = "../data/20180906/tensor_dim4_20180906.txt
 std::string train_tensor_path       = "../data/20180906/tensor_dim4_80_20180906.txt";
 std::string test_tensor_path        = "../data/20180906/tensor_dim4_20_20180906.txt";
 std::string company_category_path   = "../data/20180906/category_of_company_80_20180906.txt";
+std::string skill_category_path     = "../data/20180906/skill_category.txt";
+
+
+std::map< size_t, std::vector< std::pair<size_t, double> > > skill_category_map;
+void read_skill_category()
+{
+    std::ifstream myin(skill_category_path);
+    assert(myin);
+    skill_category_map.clear();
+    int n, skill, m;
+    myin>>n;
+    for (int i=0; i<n; i++)
+    {
+        myin>>skill>>m;
+        skill_category_map[skill] = std::vector< std::pair<size_t, double> >(m);
+        for (auto & p : skill_category_map[skill])
+            myin>>p.first>>p.second;
+    }
+}
+
 
 int main(int args, const char* argv[])
 {
@@ -59,13 +80,14 @@ int main(int args, const char* argv[])
     wjy::load_sparse_tensor(train_tensor, train_tensor_path);
     wjy::load_sparse_tensor(test_tensor, test_tensor_path);
 
+    read_skill_category();
+
     auto train_tensors  = wjy::split_sparse_tensor(train_tensor, 3);
     auto test_tensors   = wjy::split_sparse_tensor(test_tensor, 3);
     std::vector< std::vector<double> > old_parameters;
 
-    std::string file_path = "../model/20180913_1_";
+    std::string file_path = "../model/20181008_1_";
     int n = 5;    //  2013-2017 5 years
-    auto train_tensors = wjy::split_sparse_tensor(train_tensor, 3);
     
     std::vector<int> mini_batch_nums = {50, 500, 1000, 1000, 1000};
 
@@ -76,7 +98,7 @@ int main(int args, const char* argv[])
             std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], 
             0/*0.5*/, {}, 
             1/*0*/, old_parameters,
-            0/*1*/, {}
+            1/*0*/, skill_category_map
         );
         // wjy::my_model_2<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], old_parameters, 2);
         // wjy::pairwise_interaction_tensor_factorization<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i]);
@@ -87,8 +109,9 @@ int main(int args, const char* argv[])
         old_parameters.push_back( std::move(pred.get_parameters()) );
         pred.save(file_path + std::to_string(i+2013)+".mod");
     }
-    
-    wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_2<double, 3>();
+
+    wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_4< double, 3 >();
+    // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_2<double, 3>();
     // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::pairwise_interaction_tensor_factorization<double, 3>();
     //wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_1<double, 3>();
     //年份分开计算各种指标

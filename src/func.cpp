@@ -54,6 +54,9 @@ void create_tensor()
         if (year >4 || year<0) continue; //to 2017
         index[3] = year;
         // these two keys must in the map.
+        if (company_position.first == "" || company_position.second=="") continue;
+        if (company_to_id.count(company_position.first)==0) continue;
+        if (position_to_id.count(company_position.second)==0) continue;
         index[0] = company_to_id[company_position.first];
         index[1] = position_to_id[company_position.second];
         if ((company_fliter(company_position.first) && position_fliter(company_position.second))==false)  continue;
@@ -295,7 +298,7 @@ std::pair< std::string, std::string > get_company_position(int id)
 
 void print_top_k(const wjy::sparse_tensor<double, 4>& tensor, int k)
 {
-    wjy::Date date(2018, 07, 13);
+    wjy::Date date(2018, 9, 6);
     read_all(date);
 
     auto  tensors = wjy::split_sparse_tensor(tensor, 3);
@@ -312,7 +315,6 @@ void print_top_k(const wjy::sparse_tensor<double, 4>& tensor, int k)
             company_counter[company] += 1;
             position_counter[position] += 1;
         }
-
         auto & c = company_counter;
 
         std::vector< std::pair<std::string, int> > v(c.begin(), c.end());
@@ -322,6 +324,7 @@ void print_top_k(const wjy::sparse_tensor<double, 4>& tensor, int k)
         std::cout<<2013+i<<std::endl;
         for (auto & p : v)
             std::cout<<p.first<<" "<<p.second<<std::endl;
+        
     }
 }
 

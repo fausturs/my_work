@@ -32,9 +32,9 @@ std::mt19937 mt2(1);
 std::uniform_real_distribution<double> urd2(-2, 2);
 auto distribution2 = std::bind(urd2, std::ref(mt2));
 
-size_t gd_iter_num = 2000;
-size_t gd_epoch_size = 200;
-double gd_learning_rate = 0.0000001;
+size_t gd_iter_num = 20000;
+size_t gd_epoch_size = 2000;
+double gd_learning_rate = 0.000001;
 double gd_convergence_condition = 0.001;
 std::shared_ptr< wjy::trainer<double> > gd = std::make_shared< wjy::GD<double> >(gd_iter_num, gd_epoch_size, gd_learning_rate, gd_convergence_condition);
 
@@ -45,35 +45,55 @@ double sgd_learning_rate = 0.001;
 double sgd_convergence_condition = 0.001;
 std::shared_ptr< wjy::trainer<double> > sgd = std::make_shared< wjy::SGD<double> >(sgd_iter_num, sgd_epoch_size, sgd_learning_rate, sgd_convergence_condition, sgd_random_seed);
 
-std::string tensor_path             = "../data/20180713/tensor_dim4_20180713.txt";
-std::string train_tensor_path       = "../data/20180713/tensor_dim4_80_20180713.txt";
-std::string test_tensor_path        = "../data/20180713/tensor_dim4_20_20180713.txt";
-std::string company_category_path   = "../data/20180713/category_of_company_80_20180713.txt";
+std::string tensor_path             = "../data/20180906/tensor_dim4_20180906.txt";
+std::string train_tensor_path       = "../data/20180906/tensor_dim4_80_20180906.txt";
+std::string test_tensor_path        = "../data/20180906/tensor_dim4_20_20180906.txt";
+std::string company_category_path   = "../data/20180906/category_of_company_80_20180906.txt";
 
 int main(int args, const char* argv[])
 {
 
     wjy::sparse_tensor<double ,4> train_tensor, test_tensor, tensor;
-    wjy::load_sparse_tensor(tensor, tensor_path);
-    // wjy::load_sparse_tensor(train_tensor, train_tensor_path);
-    // wjy::load_sparse_tensor(test_tensor, test_tensor_path);
+    // wjy::load_sparse_tensor(tensor, tensor_path);
 
+    wjy::load_sparse_tensor(train_tensor, train_tensor_path);
+    wjy::load_sparse_tensor(test_tensor, test_tensor_path);
+    auto train_tensors = wjy::split_sparse_tensor(train_tensor, 3);
+    auto test_tensors = wjy::split_sparse_tensor(test_tensor, 3);
+    std::vector< std::vector<double> > old_parameters;
 
-    // std::string file_path = "../model/20180821";
+    std::string file_path = "../model/20180913_1_";
+    int n = 5;    //  2013-2017 5 years
+
     
-    // wjy::pairwise_interaction_tensor_factorization<double, 4> pred(std::move(train_tensor), 10, 0.5, 2000);
+    std::vector<int> mini_batch_nums = {50, 500, 1000, 1000, 1000};
 
-    // pred.train(sgd, std::cout, distribution1);
-    // pred.save(file_path + "_1.mod");
-    // auto ae = all_evaluations(test_tensor, pred);
-    // for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
 
-    // pred.train(gd, std::cout);
-    // pred.save(file_path + "_2.mod");
-    // ae = all_evaluations(test_tensor, pred);
-    // for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
-
-    print_top_k(tensor, 20);
+ 
+    for (int i=0; i<n; i++)
+    {
+        train_tensors[i][{24530, 11825, 680}] = 0;
+        wjy::my_model_2<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], old_parameters, 2);
+        // wjy::pairwise_interaction_tensor_factorization<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i]);
+        //wjy::my_model_1<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, category, 0.2, mini_batch_nums[i]);
+        // wjy::my_model_3<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, category, 0.2, mini_batch_nums[i], old_parameters, 0.1);
+        pred.train(sgd, std::cout, distribution1);
+        pred.train(gd, std::cout);
+        old_parameters.push_back( std::move(pred.get_parameters()) );
+        pred.save(file_path + std::to_string(i+2013)+".mod");
+    }
+    
+    wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_2<double, 3>();
+    // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::pairwise_interaction_tensor_factorization<double, 3>();
+    //wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_1<double, 3>();
+    //年份分开计算各种指标
+    // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_3<double, 3>();
+    for (int i=0; i<n; i++)
+    {
+        pred->load(file_path + std::to_string(i+2013)+".mod");
+        auto ae = all_evaluations(test_tensors[i], *pred);
+        for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
+    }
 
     return 0;
 }

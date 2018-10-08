@@ -58,8 +58,9 @@ int main(int args, const char* argv[])
     // wjy::load_sparse_tensor(tensor, tensor_path);
     wjy::load_sparse_tensor(train_tensor, train_tensor_path);
     wjy::load_sparse_tensor(test_tensor, test_tensor_path);
-    auto train_tensors = wjy::split_sparse_tensor(train_tensor, 3);
-    auto test_tensors = wjy::split_sparse_tensor(test_tensor, 3);
+
+    auto train_tensors  = wjy::split_sparse_tensor(train_tensor, 3);
+    auto test_tensors   = wjy::split_sparse_tensor(test_tensor, 3);
     std::vector< std::vector<double> > old_parameters;
 
     std::string file_path = "../model/20180913_1_";
@@ -71,7 +72,13 @@ int main(int args, const char* argv[])
     for (int i=0; i<n; i++)
     {
         train_tensors[i][{24530, 11825, 680}] = 0;
-        wjy::my_model_2<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], old_parameters, 2);
+        wjy::my_model_4< double, 3 > pred(
+            std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], 
+            0/*0.5*/, {}, 
+            1/*0*/, old_parameters,
+            0/*1*/, {}
+        );
+        // wjy::my_model_2<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], old_parameters, 2);
         // wjy::pairwise_interaction_tensor_factorization<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i]);
         //wjy::my_model_1<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, category, 0.2, mini_batch_nums[i]);
         // wjy::my_model_3<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, category, 0.2, mini_batch_nums[i], old_parameters, 0.1);
@@ -94,7 +101,7 @@ int main(int args, const char* argv[])
     }
     // print_top_k(tensor, 20);
 
-    wjy::my_model_4< double, 3 > my_model(std::move(train_tensors[0]), 10, 0.5, 2000, 0.5, {}, 1, {}, 1, {});
+    
 
     return 0;
 }

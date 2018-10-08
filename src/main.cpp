@@ -18,6 +18,7 @@
 #include "my_model_1.hpp"
 #include "my_model_2.hpp"
 #include "my_model_3.hpp"
+#include "my_model_4.hpp"
 
 #include "func.hpp"
 
@@ -55,7 +56,6 @@ int main(int args, const char* argv[])
 
     wjy::sparse_tensor<double ,4> train_tensor, test_tensor, tensor;
     // wjy::load_sparse_tensor(tensor, tensor_path);
-
     wjy::load_sparse_tensor(train_tensor, train_tensor_path);
     wjy::load_sparse_tensor(test_tensor, test_tensor_path);
     auto train_tensors = wjy::split_sparse_tensor(train_tensor, 3);
@@ -64,12 +64,10 @@ int main(int args, const char* argv[])
 
     std::string file_path = "../model/20180913_1_";
     int n = 5;    //  2013-2017 5 years
-
+    auto train_tensors = wjy::split_sparse_tensor(train_tensor, 3);
     
     std::vector<int> mini_batch_nums = {50, 500, 1000, 1000, 1000};
 
-
- 
     for (int i=0; i<n; i++)
     {
         train_tensors[i][{24530, 11825, 680}] = 0;
@@ -94,6 +92,9 @@ int main(int args, const char* argv[])
         auto ae = all_evaluations(test_tensors[i], *pred);
         for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
     }
+    // print_top_k(tensor, 20);
+
+    wjy::my_model_4< double, 3 > my_model(std::move(train_tensors[0]), 10, 0.5, 2000, 0.5, {}, 1, {}, 1, {});
 
     return 0;
 }

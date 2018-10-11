@@ -75,7 +75,7 @@ namespace wjy{
         if (std::abs(lambda_1)<0.00000001) return;
         this->company_category_map = std::move(company_category_map);
         //  discretization
-        auto v = company_category_map;
+        auto v = this->company_category_map;
         std::sort(v.begin(), v.end());
         auto it_end = std::unique(v.begin(), v.end());
         this->company_category_num = std::distance(v.begin(), it_end);

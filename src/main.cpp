@@ -69,6 +69,7 @@ void read_skill_category()
         for (auto & p : skill_category_map[skill])
             myin>>p.first>>p.second;
     }
+    myin.close();
 }
 
 std::vector<size_t> company_category_map;
@@ -81,6 +82,7 @@ void read_company_category()
     company_category_map.resize(n);
     for (int i=0 ;i<n; i++)
         myin>>company_category_map[i];
+    myin.close();
 }
 
 

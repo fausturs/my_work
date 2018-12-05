@@ -296,37 +296,184 @@ std::pair< std::string, std::string > get_company_position(int id)
 */
 
 
-void print_top_k(const wjy::sparse_tensor<double, 4>& tensor, int k)
+std::vector< std::vector< std::pair<std::string, int> > > print_top_k_company(int k)
 {
-    wjy::Date date(2018, 9, 6);
-    read_all(date);
+    read_jdid_company_position();
+    read_jdid_posttime();
 
-    auto  tensors = wjy::split_sparse_tensor(tensor, 3);
+    std::vector< std::vector< std::pair<std::string, int> > > ans;
+
+    std::vector< std::unordered_map< std::string , int > > counters(5);
+
+    for (auto & p : jdid_company_position)
+    {
+        auto & id = p.first;
+        auto & company = p.second.first;
+        auto & position = p.second.second;
+
+        auto year = jdid_posttime[id];
+        if (year<2013 || 2017<year) continue;
+        year = year - 2013;
+
+        counters[year][company] += 1;
+    }
+
     for (int i=0; i<5; i++)
     {
-        std::unordered_map< std::string , int > company_counter, position_counter;
-
-        auto t = wjy::flatten_sparse_tensor(tensors[i], 2);
-        for (auto & entry : t)
-        {
-            auto & index = entry.first;
-            auto company = id_to_company[index[0]];
-            auto position = id_to_position[index[1]];
-            company_counter[company] += 1;
-            position_counter[position] += 1;
-        }
-        auto & c = company_counter;
-
-        std::vector< std::pair<std::string, int> > v(c.begin(), c.end());
-
+        auto & counter = counters[i];
+        std::vector< std::pair<std::string, int> > v(counter.begin(), counter.end());
         std::sort(v.begin(), v.end(), [](auto&x, auto&y){return x.second > y.second;});
-        v.resize(k);
-        std::cout<<2013+i<<std::endl;
-        for (auto & p : v)
-            std::cout<<p.first<<" "<<p.second<<std::endl;
-        
+        if (k > 0) v.resize(k);
+        ans.push_back(v);
+    }
+
+    // wjy::Date date(2018, 9, 6);
+    // read_all(date);
+
+    // std::vector< std::vector< std::pair<std::string, int> > > ans;
+
+    // auto  tensors = wjy::split_sparse_tensor(tensor, 3);
+    // for (int i=0; i<5; i++)
+    // {
+    //     std::unordered_map< std::string , int > company_counter, position_counter;
+
+    //     auto t = wjy::flatten_sparse_tensor(tensors[i], 2);
+    //     for (auto & entry : t)
+    //     {
+    //         auto & index = entry.first;
+    //         auto company = id_to_company[index[0]];
+    //         auto position = id_to_position[index[1]];
+    //         company_counter[company] += 1;
+    //         position_counter[position] += 1;
+    //     }
+    //     auto & c = company_counter;
+
+    //     std::vector< std::pair<std::string, int> > v(c.begin(), c.end());
+
+    //     std::sort(v.begin(), v.end(), [](auto&x, auto&y){return x.second > y.second;});
+    //     if (k > 0) v.resize(k);
+    //     // std::cout<<2013+i<<std::endl;
+    //     // for (auto & p : v)
+    //     //     std::cout<<p.first<<" "<<p.second<<std::endl;
+    //     ans.push_back(v);
+    // }
+    return ans;
+}
+
+std::vector< std::vector< std::pair<std::string, int> > > print_top_k_position_of_company(const std::string& company_name, int k)
+{
+    read_jdid_company_position();
+    read_jdid_posttime();
+
+    std::vector< std::vector< std::pair<std::string, int> > > ans;
+
+    std::vector< std::unordered_map< std::string , int > > counters(5);
+
+    for (auto & p : jdid_company_position)
+    {
+        auto & id = p.first;
+        auto & company = p.second.first;
+        auto & position = p.second.second;
+
+        if (company_name != company) continue;
+
+        auto year = jdid_posttime[id];
+        if (year<2013 || 2017<year) continue;
+        year = year - 2013;
+
+        counters[year][position] += 1;
+    }
+
+    for (int i=0; i<5; i++)
+    {
+        auto & counter = counters[i];
+        std::vector< std::pair<std::string, int> > v(counter.begin(), counter.end());
+        std::sort(v.begin(), v.end(), [](auto&x, auto&y){return x.second > y.second;});
+        if (k > 0) v.resize(k);
+        ans.push_back(v);
+    }
+
+    // for (int i=0; i<5; i++)
+    // {
+    //     std::unordered_map< std::string , int > position_counter;
+
+    //     auto t = wjy::flatten_sparse_tensor(tensors[i], 2);
+    //     for (auto & entry : t)
+    //     {
+    //         auto & index = entry.first;
+    //         if (index[0] != company_id) continue;
+    //         auto position = id_to_position[index[1]];
+    //         position_counter[position] += 1;
+    //     }
+    //     auto & c = position_counter;
+
+    //     std::vector< std::pair<std::string, int> > v(c.begin(), c.end());
+
+    //     std::sort(v.begin(), v.end(), [](auto&x, auto&y){return x.second > y.second;});
+    //     if (k > 0) v.resize(k);
+    //     // std::cout<<2013+i<<std::endl;
+    //     // for (auto & p : v)
+    //     //     std::cout<<p.first<<" "<<p.second<<std::endl;
+    //     ans.push_back(v);
+    // }
+    return ans;
+}
+
+std::vector< std::vector<double> > company_skills_count(std::size_t company_id, const wjy::sparse_tensor<double, 4> & tensor)
+{
+    std::vector< std::vector<double> > counter(5);
+    for (auto & c : counter) c.resize(680, 0);
+    for (auto & entry : tensor)
+    {
+        auto & index = entry.first;
+        auto & value = entry.second;
+        if (index[0]==company_id) counter[ index[3] ][ index[2] ] += value;
+    }
+    return counter;
+}
+void print_companies_skills_count(const std::vector< std::string >& companies, std::ostream& myout )
+{
+    read_all(wjy::Date(2018, 9, 6));
+    wjy::sparse_tensor<double, 4> tensor;
+    wjy::load_sparse_tensor(tensor, "../data/20180906/tensor_dim4_20180906.txt");
+
+    for (auto & company : companies)
+    {
+        std::size_t company_id = company_to_id[company];
+        auto result = company_skills_count(company_id, tensor);
+        for (auto & row : result)
+        {
+            std::string spliter = "";
+            for (auto & x : row) 
+            {
+                myout<<spliter<<x;
+                spliter=" ";
+            }
+            myout<<std::endl;
+        }
+        // myout<<std::endl;
+    }
+
+}
+
+
+void category_of_company()
+{
+    std::string tensor_path = "../data/20180906/tensor_dim4_20180906.txt";
+    std::string save_path = "../data/20180906/";
+    wjy::sparse_tensor<double ,4> tensor;
+    wjy::load_sparse_tensor(tensor, tensor_path);
+    auto tensors = wjy::split_sparse_tensor(wjy::flatten_sparse_tensor(tensor, 3), 0);
+    for (int i=20; i<=100; i+=20)
+    {
+        auto c = k_means_for_tensors(tensors, i, 200);
+        std::ofstream myout(save_path+std::to_string(i)+"_category_of_company.txt");
+        myout<<c.size()<<std::endl;
+        for (auto & x : c) myout<<x<<" ";
+        myout.close();
     }
 }
+
 
 //for test
 void test()

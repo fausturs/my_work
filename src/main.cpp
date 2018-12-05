@@ -22,6 +22,7 @@
 #include "my_model_4.hpp"
 
 #include "func.hpp"
+#include "print.hpp"
 
 std::ofstream myout;
 std::ifstream myin;
@@ -89,58 +90,78 @@ void read_company_category()
 int main(int args, const char* argv[])
 {
 
-    wjy::sparse_tensor<double ,4> train_tensor, test_tensor, tensor;
+    // wjy::sparse_tensor<double ,4> train_tensor, test_tensor, tensor;
     // wjy::load_sparse_tensor(tensor, tensor_path);
-    wjy::load_sparse_tensor(train_tensor, train_tensor_path);
-    wjy::load_sparse_tensor(test_tensor, test_tensor_path);
+    // wjy::load_sparse_tensor(train_tensor, train_tensor_path);
+    // wjy::load_sparse_tensor(test_tensor, test_tensor_path);
 
-    read_skill_category();
-    read_company_category();
+    // read_skill_category();
+    // read_company_category();
 
-    auto train_tensors  = wjy::split_sparse_tensor(train_tensor, 3);
-    auto test_tensors   = wjy::split_sparse_tensor(test_tensor, 3);
-    std::vector< std::vector<double> > old_parameters;
+    // auto train_tensors  = wjy::split_sparse_tensor(train_tensor, 3);
+    // auto test_tensors   = wjy::split_sparse_tensor(test_tensor, 3);
+    // std::vector< std::vector<double> > old_parameters;
 
-    std::string file_path = "../model/20181011_2_";
-    int n = 5;    //  2013-2017 5 years
+    // std::string file_path = "../model/20181013_2_";
+    // int n = 5;    //  2013-2017 5 years
     
-    std::vector<int> mini_batch_nums = {50, 500, 1000, 1000, 1000};
+    // std::vector<int> mini_batch_nums = {50, 500, 1000, 1000, 1000};
 
-    std::cout<<"PITF + 1, 1 0 0"<<std::endl;
-    for (int i=0; i<n; i++)
-    {
-        train_tensors[i][{24530, 11825, 680}] = 0;
-        wjy::my_model_4< double, 3 > pred(
-            std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], 
-            1/*0*/, company_category_map, 
-            0/*1*/, old_parameters,
-            0/*5*/, skill_category_map
-        );
-        // wjy::my_model_2<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], old_parameters, 2);
-        // wjy::pairwise_interaction_tensor_factorization<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i]);
-        //wjy::my_model_1<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, category, 0.2, mini_batch_nums[i]);
-        // wjy::my_model_3<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, category, 0.2, mini_batch_nums[i], old_parameters, 0.1);
-        pred.train(sgd, std::cout, distribution1);
-        pred.train(gd, std::cout);
-        old_parameters.push_back( std::move(pred.get_parameters()) );
-        pred.save(file_path + std::to_string(i+2013)+".mod");
-    }
+    // std::cout<<"PITF + 1, 1 0 0"<<std::endl;
+    // for (int i=0; i<n; i++)
+    // {
+    //     train_tensors[i][{24530, 11825, 680}] = 0;
+    //     wjy::my_model_4< double, 3 > pred(
+    //         std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], 
+    //         1/*0*/, company_category_map, 
+    //         0/*1*/, old_parameters,
+    //         0/*5*/, skill_category_map
+    //     );
+    //     // wjy::my_model_2<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i], old_parameters, 2);
+    //     // wjy::pairwise_interaction_tensor_factorization<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, mini_batch_nums[i]);
+    //     //wjy::my_model_1<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, category, 0.2, mini_batch_nums[i]);
+    //     // wjy::my_model_3<double, 3> pred(std::move(train_tensors[i]), 10, 0.5, category, 0.2, mini_batch_nums[i], old_parameters, 0.1);
+    //     pred.train(sgd, std::cout, distribution1);
+    //     pred.train(gd, std::cout);
+    //     old_parameters.push_back( std::move(pred.get_parameters()) );
+    //     pred.save(file_path + std::to_string(i+2013)+".mod");
+    // }
 
-    wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_4< double, 3 >();
-    // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_2<double, 3>();
-    // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::pairwise_interaction_tensor_factorization<double, 3>();
-    //wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_1<double, 3>();
-    //年份分开计算各种指标
-    // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_3<double, 3>();
-    for (int i=0; i<n; i++)
-    {
-        pred->load(file_path + std::to_string(i+2013)+".mod");
-        auto ae = all_evaluations(test_tensors[i], *pred);
-        for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
-    }
-    // print_top_k(tensor, 20);
+    // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_4< double, 3 >();
+    // // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_2<double, 3>();
+    // // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::pairwise_interaction_tensor_factorization<double, 3>();
+    // //wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_1<double, 3>();
+    // //年份分开计算各种指标
+    // // wjy::tensor_factorization_predictor<double, 3> * pred = new wjy::my_model_3<double, 3>();
+    // for (int i=0; i<n; i++)
+    // {
+    //     pred->load(file_path + std::to_string(i+2013)+".mod");
+    //     auto ae = all_evaluations(test_tensors[i], *pred);
+    //     for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
+    // }
 
-    
+
+    /*
+        "百度", "c++研发工程师",
+        "美团点评",
+        "腾讯".
+        "美团网",
+        "饿了么",
+        "京东",
+        "阿里巴巴",
+    */
+
+    // for (auto & a : print_top_k_company(20)) wjy::println(a);
+    // for (auto & a : print_top_k_position_of_company("百度", 20)) wjy::println(a);
+    // for (int i=0; i<n; i++)
+    // {
+    //     pred->load(file_path + std::to_string(i+2013)+".mod");
+    //     wjy::println( top_k_skill_of_company_position(*pred, "百度", "c++研发工程师", 20) );
+    // }
+
+    // print_companies_skills_count({"百度", "京东", "腾讯", "阿里巴巴"});
+
+    category_of_company();
 
     return 0;
 }

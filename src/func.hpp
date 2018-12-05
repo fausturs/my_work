@@ -260,8 +260,42 @@ wjy::sparse_tensor<T, 3> generate_negative_entries(const wjy::sparse_tensor<T, 3
     return negative_tensor;
 }
 
-void print_top_k(const wjy::sparse_tensor<double, 4>& tensor, int k);
 
+std::vector< std::vector< std::pair<std::string, int> > > print_top_k_company(int k);
+std::vector< std::vector< std::pair<std::string, int> > > print_top_k_position_of_company(const std::string& company_name, int k);
+
+template<typename T, typename V>
+std::vector< std::pair<std::string, double> > top_k_skill_of_company_position(const wjy::predictor<T, V>& pred, const std::string& company_name, const std::string& position_name, int k)
+{
+    std::vector< std::pair<std::string, double> > ans;
+    
+    wjy::Date date(2018, 9, 6);
+    read_all(date);
+
+    size_t n = id_to_skill.size();
+    if ((company_to_id.count(company_name)==0)|| (position_to_id.count(position_name)==0)) return {};
+    auto company_id = company_to_id[company_name];
+    auto position_id = position_to_id[position_name];
+
+    wjy::sparse_tensor_index<3> index = {company_id, position_id, 0};
+
+    for (size_t i=0; i<n; i++)
+    {
+        index[2] = i;
+        auto skill_name = id_to_skill[i];
+        auto p = pred(index);
+        ans.emplace_back(skill_name, p);
+    }
+    std::sort(ans.begin(), ans.end(), [](auto&x, auto&y){return x.second > y.second;});
+    if (k > 0) ans.resize(k);
+
+    return ans;
+}
+
+std::vector< std::vector<double> > company_skills_count(std::size_t company_id, const wjy::sparse_tensor<double, 4> & tensor);
+void print_companies_skills_count(const std::vector< std::string >& companies, std::ostream& myout = std::cout);
+
+void category_of_company();
 
 //for test
 void test();

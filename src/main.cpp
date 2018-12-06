@@ -86,6 +86,90 @@ void read_company_category()
     myin.close();
 }
 
+//  对不同的分类数量进行实验
+//  公司分类数量20 40 60 80 100
+//  技能分类数量20 40 60 80 100
+void func20181206_train()
+{
+
+    std::cout<<"train log 20181206"<<std::endl;
+    std::cout<<"model4 lamnda 1 1 5"<<std::endl;
+    std::cout<<"different category num of company and skill"<<std::endl;
+
+    wjy::sparse_tensor<double ,4> train_tensor;
+    std::vector<int> mini_batch_nums = {50, 500, 1000, 1000, 1000};
+
+    int years = 5;
+
+    for (int i=20; i<=100; i+=20)
+    {
+        company_category_path = "../data/20180906/" + std::to_string(i) + "_category_of_company.txt";
+        read_company_category();
+        for (int j=20; j<=100; j+=20)
+        {
+            skill_category_path = "../data/20180906/skill_category_" + std::to_string(j) +".txt";
+            std::string model_path = "../model/20181206_lambda115_c"+std::to_string(i)+"_s"+std::to_string(j)+"_";
+            read_skill_category();
+
+            std::cout<<"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<std::endl;
+            std::cout<<"company category num:"<<i<<std::endl;
+            std::cout<<"skill category num:"<<j<<std::endl;
+
+
+            wjy::load_sparse_tensor(train_tensor, train_tensor_path);
+            auto train_tensors  = wjy::split_sparse_tensor(train_tensor, 3);
+
+            std::vector< std::vector<double> > old_parameters;
+
+            for (int k=0; k<years; k++)
+            {
+                train_tensors[k][{24530, 11825, 680}] = 0;
+                wjy::my_model_4< double, 3 > pred(
+                    std::move(train_tensors[k]), 10, 0.5, mini_batch_nums[k], 
+                    1/*0*/, company_category_map, 
+                    1/*0*/, old_parameters,
+                    5/*0*/, skill_category_map
+                );
+                pred.train(sgd, std::cout, distribution1);
+                pred.train(gd, std::cout);
+                old_parameters.push_back( std::move(pred.get_parameters()) );
+                pred.save(model_path + std::to_string(k+2013)+".mod");
+            }
+        }
+    }
+
+}
+
+void func20181206_evaluate()
+{
+    wjy::sparse_tensor<double ,4> test_tensor;
+    wjy::load_sparse_tensor(test_tensor, test_tensor_path);
+    auto test_tensors = wjy::split_sparse_tensor(test_tensor, 3);
+
+    int years = 5;
+
+    for (int i=20; i<=100; i+=20)
+    {
+        for (int j=20; j<=100; j+=20)
+        {
+            std::string model_path = "../model/20181206_lambda115_c"+std::to_string(i)+"_s"+std::to_string(j)+"_";
+
+            std::cout<<"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<std::endl;
+            std::cout<<"company category num:"<<i<<std::endl;
+            std::cout<<"skill category num:"<<j<<std::endl;
+
+            //所有年合在一块评估
+            std::vector< wjy::predictor<double, wjy::sparse_tensor_index<3> > * > preds;//有内存泄露 懒得delete了
+            for (int k=0; k<years; k++) preds.push_back( new wjy::my_model_4<double, 3>() );
+
+            for (int k=0; k<years; k++) preds[i]->load(model_path + std::to_string(k+2013)+".mod");
+
+            auto ae = all_evaluations_1(test_tensors, preds);
+
+            for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
+        }
+    }
+}
 
 int main(int args, const char* argv[])
 {
@@ -161,7 +245,8 @@ int main(int args, const char* argv[])
 
     // print_companies_skills_count({"百度", "京东", "腾讯", "阿里巴巴"});
 
-    category_of_company();
+    func20181206_train();
+    //func20181206_evaluate();
 
     return 0;
 }

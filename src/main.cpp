@@ -162,7 +162,7 @@ void func20181206_evaluate()
             std::vector< wjy::predictor<double, wjy::sparse_tensor_index<3> > * > preds;//有内存泄露 懒得delete了
             for (int k=0; k<years; k++) preds.push_back( new wjy::my_model_4<double, 3>() );
 
-            for (int k=0; k<years; k++) preds[i]->load(model_path + std::to_string(k+2013)+".mod");
+            for (int k=0; k<years; k++) preds[k]->load(model_path + std::to_string(k+2013)+".mod");
 
             auto ae = all_evaluations_1(test_tensors, preds);
 
@@ -170,6 +170,122 @@ void func20181206_evaluate()
         }
     }
 }
+
+void func20181221_train()
+{
+    std::cout<<"train log 20181221"<<std::endl;
+    std::cout<<"all lamnda 0.5 1 1 5"<<std::endl;
+    std::cout<<"different k"<<std::endl;
+
+    wjy::sparse_tensor<double ,4> train_tensor;
+    std::vector< wjy::sparse_tensor<double, 3> > train_tensors;
+    std::vector<int> mini_batch_nums = {50, 500, 1000, 1000, 1000};
+    std::vector< std::vector<double> > old_parameters;
+
+    company_category_path   = "../data/20180906/20_category_of_company.txt";  
+    skill_category_path     = "../data/20180906/skill_category_40.txt";
+    read_company_category();
+    read_skill_category();
+
+    int years=5;
+
+    auto factory = [&](int i, std::size_t k, int year)-> wjy::predictor<double, wjy::sparse_tensor_index<3> > *{
+        switch(i){
+            case 0:
+                return new wjy::tucker_decomposition<double, 3>(std::move(train_tensors[year]), {k, k, k}, 0.5, mini_batch_nums[year]);
+            case 1:
+                return new wjy::canonical_decomposition<double, 3>(std::move(train_tensors[year]), k, 0.5, mini_batch_nums[year]);
+            case 2:
+                return new wjy::pairwise_interaction_tensor_factorization<double, 3>(std::move(train_tensors[year]), k, 0.5, mini_batch_nums[year]);
+            case 3:
+                return new wjy::my_model_4<double, 3>(std::move(train_tensors[year]), k, 0.5, mini_batch_nums[year], 
+                    1/*0*/, company_category_map, 
+                    1/*0*/, old_parameters,
+                    5/*0*/, skill_category_map);
+            default:
+                return nullptr;
+        }
+    };
+
+    wjy::predictor< double, wjy::sparse_tensor_index<3> > * pred = nullptr;
+
+    for (int i=0; i<4; i++)
+    {
+        for (int k=5; k<=30; k+=5)
+        {
+            wjy::load_sparse_tensor(train_tensor, train_tensor_path);
+            train_tensors = wjy::split_sparse_tensor(train_tensor, 3);
+            old_parameters.clear();
+
+            std::string model_path = "../model/20181221_lambda115_i"+std::to_string(i)+"_k"+std::to_string(k)+"_";
+            std::cout<<"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<std::endl;
+            std::cout<<"i= "<<i<<std::endl;
+            std::cout<<"k= "<<k<<std::endl;
+        
+
+            for (int year=0; year<years; year++)
+            {
+                if (pred != nullptr) delete pred;
+                pred = factory(i, k, year);
+                assert(pred!=nullptr);
+
+                pred->train(sgd, std::cout, distribution1);
+                pred->train(gd, std::cout);
+                old_parameters.push_back( std::move(pred->get_parameters()) );
+                pred->save(model_path + std::to_string(k+2013)+".mod");
+            }
+        }
+    }
+}
+
+void func20181221_evaluate()
+{
+    wjy::sparse_tensor<double ,4> test_tensor;
+    wjy::load_sparse_tensor(test_tensor, test_tensor_path);
+    auto test_tensors = wjy::split_sparse_tensor(test_tensor, 3);
+
+    int years = 5;
+
+    auto factory = [](int i)-> wjy::predictor<double, wjy::sparse_tensor_index<3> > *{
+        switch(i){
+            case 0:
+                return new wjy::tucker_decomposition<double, 3>();
+            case 1:
+                return new wjy::canonical_decomposition<double, 3>();
+            case 2:
+                return new wjy::pairwise_interaction_tensor_factorization<double, 3>();
+            case 3:
+                return new wjy::my_model_4<double, 3>();
+            default:
+                return nullptr;
+        }
+    };
+
+
+    for (int i=0; i<4; i++)
+    {
+        for (int k=5; k<=30; k+=5)
+        {
+            std::string model_path = "../model/20181221_lambda115_i"+std::to_string(i)+"_k"+std::to_string(k)+"_";
+
+            std::cout<<"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<std::endl;
+            std::cout<<"i= "<<i<<std::endl;
+            std::cout<<"k= "<<k<<std::endl;
+
+            //所有年合在一块评估
+            std::vector< wjy::predictor<double, wjy::sparse_tensor_index<3> > * > preds;//有内存泄露 懒得delete了
+            for (int year=0; year<years; year++) preds.push_back( factory(i) );
+
+            for (int year=0; year<years; year++) preds[year]->load(model_path + std::to_string(k+2013)+".mod");
+
+            auto ae = all_evaluations_1(test_tensors, preds);
+
+            for (auto p : ae) std::cout<<p.first<<" "<<p.second<<"\n";
+        }
+    }
+}
+
+
 
 int main(int args, const char* argv[])
 {
@@ -245,9 +361,12 @@ int main(int args, const char* argv[])
 
     // print_companies_skills_count({"百度", "京东", "腾讯", "阿里巴巴"});
 
-    func20181206_train();
+    //func20181206_train();
     //func20181206_evaluate();
 
+
+    func20181221_train();
+    //func20181221_evaluate();
     return 0;
 }
 
